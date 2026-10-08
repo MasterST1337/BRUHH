@@ -1,0 +1,1324 @@
+<title>Fødevarecentralen</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+/* Isakram-farveprofilen fra designudkastet, altid lys. Layout: one phone-width column, role switch on top, bottom sheet for producer detail */
+:root{
+  --bg:#F2EAD7; --card:#FBF7EC; --ink:#2A241D; --muted:#6A5F50; --line:rgba(42,36,29,.15);
+  --sand:#E7DBBE; --amber:#C5853B; --amber-ink:#8A5A1C; --red:#B5462E; --red-ink:#8E3420; --green:#5E7A3A; --sage:#93A06B;
+  --map:#EDE3CC; --water:#C9D1C9; --road:#FBF7EC; --you:#4F6FA8;
+  --on-ink:#FBF7EC; color-scheme:light;
+  --display:'Fraunces',Georgia,'Times New Roman',serif;
+  --body:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;padding-inline:16px;padding-block:16px 48px}
+.app{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;line-height:1.08}
+h1{font-size:28px} h2{font-size:23px} h3{font-size:19px;font-weight:500}
+p{margin:0}
+.muted{color:var(--muted)}
+.eb{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.top{display:flex;align-items:center;gap:12px}
+.top .name{display:flex;flex-direction:column;gap:2px}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--sand);border-radius:24px;padding:4px}
+.seg button{height:42px;border:0;border-radius:20px;background:transparent;font-weight:600;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;align-items:center}
+.between{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.btn{height:50px;border-radius:26px;border:0;background:var(--ink);color:var(--on-ink);font-weight:600;font-size:15px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.btn.small{height:40px;font-size:14px;padding:0 14px;border-radius:20px}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.block{width:100%}
+.chip{height:40px;padding:0 14px;border-radius:20px;border:1.5px solid var(--line);background:var(--card);font-weight:600;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+.inp{height:48px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);padding:0 14px;font-size:16px;width:100%;color:var(--ink);font-weight:400}
+textarea.inp{height:auto;padding:12px 14px;resize:vertical;min-height:72px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tag{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:5px 9px;border-radius:10px;white-space:nowrap}
+.tag.last{background:var(--red);color:#FBF7EC}
+.tag.two{background:var(--sand);color:var(--amber-ink)}
+.tag.three{background:var(--sand);color:var(--muted)}
+.tag.ok{background:var(--sand);color:var(--green)}
+.tag.wait{background:var(--sand);color:var(--amber-ink)}
+.dot{width:12px;height:12px;border-radius:6px;flex:none}
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:12px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line);background:none;border-left:0;border-right:0;border-top:0;text-align:left;width:100%}
+.li:last-child{border-bottom:0}
+.li .grow{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:2px}
+.li b{font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+.price{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.price b{font-size:18px}
+.price s{color:var(--muted);font-size:13px}
+.step{display:flex;align-items:center;gap:8px}
+.step button{width:44px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);font-size:20px}
+.step button[disabled]{opacity:.35}
+.map{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:var(--map)}
+.map svg{display:block;width:100%;height:auto}
+.pin{cursor:pointer}
+.pin:focus-visible circle{stroke:var(--amber);stroke-width:4}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stat{border-radius:14px;padding:12px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat.dark{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.stat span{font-size:12px;opacity:.75}
+.stat b{font-family:var(--display);font-weight:500;font-size:20px}
+.banner{border-radius:14px;padding:12px 14px;background:var(--sand);font-size:14px}
+.empty{padding:22px 8px;text-align:center;color:var(--muted);font-size:14px}
+.split{display:flex;height:12px;border-radius:6px;overflow:hidden}
+.split span:first-child{flex:90 1 0;background:var(--sage)}
+.split span:last-child{flex:10 1 0;background:var(--ink)}
+.pbar{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.pbar span{height:8px;border-radius:4px;background:var(--sand)}.pbar .on{background:var(--sage)}.pbar .half{background:linear-gradient(90deg,var(--amber) 50%,var(--sand) 50%)}
+.plbl{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;font-size:12.5px;font-weight:600;color:var(--muted);margin-top:-8px}.plbl .on{color:var(--green)}.plbl .cur{color:var(--amber-ink)}
+.pnext{display:grid;grid-template-columns:44px 1fr;gap:12px;background:var(--bg);border-radius:14px;padding:14px;border:1px solid var(--line)}
+.pic{width:44px;height:44px;border-radius:50%;background:var(--ink);color:var(--on-ink);display:grid;place-items:center}
+.timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.timeline li{display:flex;gap:12px;align-items:flex-start}
+.timeline i{width:22px;height:22px;border-radius:11px;border:2px solid var(--line);flex:none}
+.timeline i.done{background:var(--sage);border-color:var(--sage)}
+.timeline i.now{border-color:var(--amber)}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(20,16,12,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20;padding-top:40px}
+.sheet{background:var(--bg);width:100%;max-width:492px;max-height:88vh;overflow:auto;border-radius:24px 24px 0 0;padding:12px 16px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto}
+.close{width:44px;height:44px;border-radius:22px;border:1px solid var(--line);background:var(--card);font-size:18px;flex:none}
+.code{font-family:var(--display);font-size:38px;letter-spacing:.14em}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--on-ink);padding:12px 18px;border-radius:22px;font-weight:600;font-size:14px;z-index:30;max-width:calc(100% - 32px)}
+.mapedit{cursor:crosshair}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .22s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
+.lbl{font-size:13px;font-weight:600;color:var(--muted)}
+.seg.sub{background:transparent;border:1.5px solid var(--line);padding:3px}
+.seg.sub button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);box-shadow:none}
+.ph{display:grid;place-items:center;border-radius:12px;background:var(--sand);color:var(--amber);flex:none}
+.photo{width:96px;height:96px;flex:none;border-radius:14px;border:1.5px dashed var(--line);background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;overflow:hidden}
+.photo img{width:100%;height:100%;object-fit:cover}
+.photo:focus-within{outline:2px solid var(--amber)}
+.li.prod{align-items:flex-start}
+.step.mini button{width:36px;height:36px;border-radius:10px;font-size:18px}
+.app.wide{max-width:980px}
+.tablewrap{overflow-x:auto;margin-inline:-4px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:620px}
+.tbl th{text-align:left;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px 8px;border-bottom:1.5px solid var(--ink)}
+.tbl td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl .r{text-align:right}
+.tbl b{font-weight:600}
+.days{display:grid;grid-template-columns:repeat(7,minmax(78px,1fr));gap:6px;overflow-x:auto;padding-bottom:4px}
+.day{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);text-align:center}
+.day[aria-pressed="true"]{border-color:var(--ink);background:var(--bg)}
+.day .dl{font-weight:600;font-size:13px}
+.bars{display:flex;align-items:flex-end;gap:4px;height:50px;border-bottom:1px solid var(--line);padding-inline:6px}
+.bars i{width:12px;border-radius:3px 3px 0 0;min-height:2px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px}
+input[type=range]{width:100%}
+.rt{font-family:var(--display);font-weight:500;font-size:18px}
+.li.rec{align-items:flex-start}
+.hot{color:var(--red-ink);font-weight:600}
+.meter{height:8px;border-radius:4px;background:var(--sand);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--amber);transition:width .3s}
+.photo.wide{width:100%;height:auto;min-height:72px;padding:14px;flex-direction:column}
+ .leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-tile-container, .leaflet-pane > svg, .leaflet-pane > canvas, .leaflet-zoom-box, .leaflet-image-layer, .leaflet-layer { position: absolute; left: 0; top: 0; } .leaflet-container { overflow: hidden; } .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow { -webkit-user-select: none; -moz-user-select: none; user-select: none; -webkit-user-drag: none; } .leaflet-tile::selection { background: transparent; } .leaflet-safari .leaflet-tile { image-rendering: -webkit-optimize-contrast; } .leaflet-safari .leaflet-tile-container { width: 1600px; height: 1600px; -webkit-transform-origin: 0 0; } .leaflet-marker-icon, .leaflet-marker-shadow { display: block; } .leaflet-container .leaflet-overlay-pane svg { max-width: none !important; max-height: none !important; } .leaflet-container .leaflet-marker-pane img, .leaflet-container .leaflet-shadow-pane img, .leaflet-container .leaflet-tile-pane img, .leaflet-container img.leaflet-image-layer, .leaflet-container .leaflet-tile { max-width: none !important; max-height: none !important; width: auto; padding: 0; } .leaflet-container img.leaflet-tile { mix-blend-mode: plus-lighter; } .leaflet-container.leaflet-touch-zoom { -ms-touch-action: pan-x pan-y; touch-action: pan-x pan-y; } .leaflet-container.leaflet-touch-drag { -ms-touch-action: pinch-zoom; touch-action: none; touch-action: pinch-zoom; } .leaflet-container.leaflet-touch-drag.leaflet-touch-zoom { -ms-touch-action: none; touch-action: none; } .leaflet-container { -webkit-tap-highlight-color: transparent; } .leaflet-container a { -webkit-tap-highlight-color: rgba(51, 181, 229, 0.4); } .leaflet-tile { filter: inherit; visibility: hidden; } .leaflet-tile-loaded { visibility: inherit; } .leaflet-zoom-box { width: 0; height: 0; -moz-box-sizing: border-box; box-sizing: border-box; z-index: 800; } .leaflet-overlay-pane svg { -moz-user-select: none; } .leaflet-pane { z-index: 400; } .leaflet-tile-pane { z-index: 200; } .leaflet-overlay-pane { z-index: 400; } .leaflet-shadow-pane { z-index: 500; } .leaflet-marker-pane { z-index: 600; } .leaflet-tooltip-pane { z-index: 650; } .leaflet-popup-pane { z-index: 700; } .leaflet-map-pane canvas { z-index: 100; } .leaflet-map-pane svg { z-index: 200; } .leaflet-vml-shape { width: 1px; height: 1px; } .leaflet-control { position: relative; z-index: 800; pointer-events: visiblePainted; pointer-events: auto; } .leaflet-top, .leaflet-bottom { position: absolute; z-index: 1000; pointer-events: none; } .leaflet-top { top: 0; } .leaflet-right { right: 0; } .leaflet-bottom { bottom: 0; } .leaflet-left { left: 0; } .leaflet-control { float: left; clear: both; } .leaflet-right .leaflet-control { float: right; } .leaflet-top .leaflet-control { margin-top: 10px; } .leaflet-bottom .leaflet-control { margin-bottom: 10px; } .leaflet-left .leaflet-control { margin-left: 10px; } .leaflet-right .leaflet-control { margin-right: 10px; } .leaflet-fade-anim .leaflet-popup { opacity: 0; -webkit-transition: opacity 0.2s linear; -moz-transition: opacity 0.2s linear; transition: opacity 0.2s linear; } .leaflet-fade-anim .leaflet-map-pane .leaflet-popup { opacity: 1; } .leaflet-zoom-animated { -webkit-transform-origin: 0 0; -ms-transform-origin: 0 0; transform-origin: 0 0; } svg.leaflet-zoom-animated { will-change: transform; } .leaflet-zoom-anim .leaflet-zoom-animated { -webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1); -moz-transition: -moz-transform 0.25s cubic-bezier(0,0,0.25,1); transition: transform 0.25s cubic-bezier(0,0,0.25,1); } .leaflet-zoom-anim .leaflet-tile, .leaflet-pan-anim .leaflet-tile { -webkit-transition: none; -moz-transition: none; transition: none; } .leaflet-zoom-anim .leaflet-zoom-hide { visibility: hidden; } .leaflet-interactive { cursor: pointer; } .leaflet-grab { cursor: -webkit-grab; cursor: -moz-grab; cursor: grab; } .leaflet-crosshair, .leaflet-crosshair .leaflet-interactive { cursor: crosshair; } .leaflet-popup-pane, .leaflet-control { cursor: auto; } .leaflet-dragging .leaflet-grab, .leaflet-dragging .leaflet-grab .leaflet-interactive, .leaflet-dragging .leaflet-marker-draggable { cursor: move; cursor: -webkit-grabbing; cursor: -moz-grabbing; cursor: grabbing; } .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-image-layer, .leaflet-pane > svg path, .leaflet-tile-container { pointer-events: none; } .leaflet-marker-icon.leaflet-interactive, .leaflet-image-layer.leaflet-interactive, .leaflet-pane > svg path.leaflet-interactive, svg.leaflet-image-layer.leaflet-interactive path { pointer-events: visiblePainted; pointer-events: auto; } .leaflet-container { background: #ddd; outline-offset: 1px; } .leaflet-container a { color: #0078A8; } .leaflet-zoom-box { border: 2px dotted #38f; background: rgba(255,255,255,0.5); } .leaflet-container { font-family: "Helvetica Neue", Arial, Helvetica, sans-serif; font-size: 12px; font-size: 0.75rem; line-height: 1.5; } .leaflet-bar { box-shadow: 0 1px 5px rgba(0,0,0,0.65); border-radius: 4px; } .leaflet-bar a { background-color: #fff; border-bottom: 1px solid #ccc; width: 26px; height: 26px; line-height: 26px; display: block; text-align: center; text-decoration: none; color: black; } .leaflet-bar a, .leaflet-control-layers-toggle { background-position: 50% 50%; background-repeat: no-repeat; display: block; } .leaflet-bar a:hover, .leaflet-bar a:focus { background-color: #f4f4f4; } .leaflet-bar a:first-child { border-top-left-radius: 4px; border-top-right-radius: 4px; } .leaflet-bar a:last-child { border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; border-bottom: none; } .leaflet-bar a.leaflet-disabled { cursor: default; background-color: #f4f4f4; color: #bbb; } .leaflet-touch .leaflet-bar a { width: 30px; height: 30px; line-height: 30px; } .leaflet-touch .leaflet-bar a:first-child { border-top-left-radius: 2px; border-top-right-radius: 2px; } .leaflet-touch .leaflet-bar a:last-child { border-bottom-left-radius: 2px; border-bottom-right-radius: 2px; } .leaflet-control-zoom-in, .leaflet-control-zoom-out { font: bold 18px 'Lucida Console', Monaco, monospace; text-indent: 1px; } .leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out { font-size: 22px; } .leaflet-control-layers { box-shadow: 0 1px 5px rgba(0,0,0,0.4); background: #fff; border-radius: 5px; } .leaflet-touch .leaflet-control-layers-toggle { width: 44px; height: 44px; } .leaflet-control-layers .leaflet-control-layers-list, .leaflet-control-layers-expanded .leaflet-control-layers-toggle { display: none; } .leaflet-control-layers-expanded .leaflet-control-layers-list { display: block; position: relative; } .leaflet-control-layers-expanded { padding: 6px 10px 6px 6px; color: #333; background: #fff; } .leaflet-control-layers-scrollbar { overflow-y: scroll; overflow-x: hidden; padding-right: 5px; } .leaflet-control-layers-selector { margin-top: 2px; position: relative; top: 1px; } .leaflet-control-layers label { display: block; font-size: 13px; font-size: 1.08333em; } .leaflet-control-layers-separator { height: 0; border-top: 1px solid #ddd; margin: 5px -10px 5px -6px; } .leaflet-container .leaflet-control-attribution { background: #fff; background: rgba(255, 255, 255, 0.8); margin: 0; } .leaflet-control-attribution, .leaflet-control-scale-line { padding: 0 5px; color: #333; line-height: 1.4; } .leaflet-control-attribution a { text-decoration: none; } .leaflet-control-attribution a:hover, .leaflet-control-attribution a:focus { text-decoration: underline; } .leaflet-attribution-flag { display: inline !important; vertical-align: baseline !important; width: 1em; height: 0.6669em; } .leaflet-left .leaflet-control-scale { margin-left: 5px; } .leaflet-bottom .leaflet-control-scale { margin-bottom: 5px; } .leaflet-control-scale-line { border: 2px solid #777; border-top: none; line-height: 1.1; padding: 2px 5px 1px; white-space: nowrap; -moz-box-sizing: border-box; box-sizing: border-box; background: rgba(255, 255, 255, 0.8); text-shadow: 1px 1px #fff; } .leaflet-control-scale-line:not(:first-child) { border-top: 2px solid #777; border-bottom: none; margin-top: -2px; } .leaflet-control-scale-line:not(:first-child):not(:last-child) { border-bottom: 2px solid #777; } .leaflet-touch .leaflet-control-attribution, .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { box-shadow: none; } .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { border: 2px solid rgba(0,0,0,0.2); background-clip: padding-box; } .leaflet-popup { position: absolute; text-align: center; margin-bottom: 20px; } .leaflet-popup-content-wrapper { padding: 1px; text-align: left; border-radius: 12px; } .leaflet-popup-content { margin: 13px 24px 13px 20px; line-height: 1.3; font-size: 13px; font-size: 1.08333em; min-height: 1px; } .leaflet-popup-content p { margin: 17px 0; margin: 1.3em 0; } .leaflet-popup-tip-container { width: 40px; height: 20px; position: absolute; left: 50%; margin-top: -1px; margin-left: -20px; overflow: hidden; pointer-events: none; } .leaflet-popup-tip { width: 17px; height: 17px; padding: 1px; margin: -10px auto 0; pointer-events: auto; -webkit-transform: rotate(45deg); -moz-transform: rotate(45deg); -ms-transform: rotate(45deg); transform: rotate(45deg); } .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: white; color: #333; box-shadow: 0 3px 14px rgba(0,0,0,0.4); } .leaflet-container a.leaflet-popup-close-button { position: absolute; top: 0; right: 0; border: none; text-align: center; width: 24px; height: 24px; font: 16px/24px Tahoma, Verdana, sans-serif; color: #757575; text-decoration: none; background: transparent; } .leaflet-container a.leaflet-popup-close-button:hover, .leaflet-container a.leaflet-popup-close-button:focus { color: #585858; } .leaflet-popup-scrolled { overflow: auto; } .leaflet-oldie .leaflet-popup-content-wrapper { -ms-zoom: 1; } .leaflet-oldie .leaflet-popup-tip { width: 24px; margin: 0 auto; -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)"; filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678); } .leaflet-oldie .leaflet-control-zoom, .leaflet-oldie .leaflet-control-layers, .leaflet-oldie .leaflet-popup-content-wrapper, .leaflet-oldie .leaflet-popup-tip { border: 1px solid #999; } .leaflet-div-icon { background: #fff; border: 1px solid #666; } .leaflet-tooltip { position: absolute; padding: 6px; background-color: #fff; border: 1px solid #fff; border-radius: 3px; color: #222; white-space: nowrap; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); } .leaflet-tooltip.leaflet-interactive { cursor: pointer; pointer-events: auto; } .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { position: absolute; pointer-events: none; border: 6px solid transparent; background: transparent; content: ""; } .leaflet-tooltip-bottom { margin-top: 6px; } .leaflet-tooltip-top { margin-top: -6px; } .leaflet-tooltip-bottom:before, .leaflet-tooltip-top:before { left: 50%; margin-left: -6px; } .leaflet-tooltip-top:before { bottom: 0; margin-bottom: -12px; border-top-color: #fff; } .leaflet-tooltip-bottom:before { top: 0; margin-top: -12px; margin-left: -6px; border-bottom-color: #fff; } .leaflet-tooltip-left { margin-left: -6px; } .leaflet-tooltip-right { margin-left: 6px; } .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { top: 50%; margin-top: -6px; } .leaflet-tooltip-left:before { right: 0; margin-right: -12px; border-left-color: #fff; } .leaflet-tooltip-right:before { left: 0; margin-left: -12px; border-right-color: #fff; } @media print { .leaflet-control { -webkit-print-color-adjust: exact; print-color-adjust: exact; } } 
+.mapwrap{position:relative;z-index:0;isolation:isolate;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:#C9D1C9}
+.leaf{height:360px;width:100%;background:#C9D1C9;font-family:var(--body)}
+.leaf.pick{height:300px;cursor:crosshair}
+.leaflet-container{background:#C9D1C9;font-family:var(--body)}
+.leaflet-control-zoom a{width:40px!important;height:40px!important;line-height:38px!important;font-size:20px!important;color:var(--ink)!important;background:var(--card)!important}
+.leaflet-bar{border:1px solid var(--line)!important;box-shadow:0 4px 12px rgba(42,36,29,.12)!important;border-radius:12px!important;overflow:hidden}
+.leaflet-control-attribution{font-size:10px;background:rgba(251,247,236,.8)!important;color:var(--muted)}
+.leaflet-tooltip{font-family:var(--body);font-weight:600;font-size:13px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 12px rgba(42,36,29,.12)}
+.town span{display:inline-block;transform:translate(-50%,-50%);font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#6A5F50;white-space:nowrap;text-shadow:0 0 3px #EDE3CC,0 0 3px #EDE3CC}
+.pinicon{cursor:pointer}.pinicon svg{display:block;filter:drop-shadow(0 2px 2px rgba(42,36,29,.25))}.pinicon.dim{opacity:.4}
+.meicon i{display:block;width:22px;height:22px;border-radius:11px;background:#4F6FA8;border:3px solid #FBF7EC;box-shadow:0 0 0 6px rgba(79,111,168,.2);box-sizing:border-box;cursor:grab}
+.shopicon i{display:block;width:18px;height:18px;border-radius:4px;background:#2A241D;border:2px solid #FBF7EC;box-sizing:border-box}
+.mapbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.mapbar select{height:40px;width:auto;flex:1 1 160px;font-size:14px;font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:5px;border:1.5px solid var(--ink);display:inline-block}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.steps span{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.steps i{height:4px;border-radius:2px;background:var(--line)}
+.steps .done i{background:var(--ink)}.steps .now i{background:var(--amber)}.steps .now{color:var(--ink)}
+.cofound{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px}
+.cic{width:38px;height:38px;border-radius:19px;border:3px solid var(--line);background:var(--card);display:grid;place-items:center;flex:none;color:var(--ink)}
+.cic.big{width:50px;height:50px;border-radius:25px;border-width:2px;border-color:var(--ink)}
+.catgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.catbtn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);font-size:12px;font-weight:600;color:var(--ink);text-align:center;line-height:1.2;min-height:84px}
+.catbtn{position:relative}.catchk{position:absolute;top:6px;right:8px;font-size:12px;line-height:1}
+.catbtn[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.linkbtn{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--amber-ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.demo-note{font-size:13px;color:var(--muted);background:var(--sand);border-radius:10px;padding:8px 12px}
+.okdot{width:26px;height:26px;border-radius:13px;background:var(--sage);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.banner.err{background:#F3D9CF;color:#7A2A18}
+.catfilter{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.catfilter::-webkit-scrollbar{display:none}
+.chip.ic{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none}
+.legend i.ring{width:12px;height:12px;border-radius:6px;border:3px solid;background:var(--card);box-sizing:border-box}
+.legend i.ring.thin{border:1.5px solid var(--ink)}
+@media (max-width:380px){.catgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.seg.role{display:flex}
+.seg.role button{flex:1 1 auto;min-width:0;padding:0 8px;white-space:nowrap;font-size:13.5px}
+@media (max-width:360px){.seg.role button{padding:0 5px;font-size:12.5px}}
+.snap{display:flex;gap:14px;align-items:center;padding:16px;border-radius:16px;border:1.5px dashed var(--ink);background:var(--bg);cursor:pointer;font-size:14px;line-height:1.4;color:var(--ink)}
+.snap:hover{background:var(--sand)}
+.snap:focus-within{outline:2px solid var(--amber)}
+.recbusy{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.recbusy i{width:14px;height:14px;border-radius:7px;border:2px solid var(--amber);border-right-color:transparent;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.recok{font-size:14px;font-weight:600;color:var(--green)}
+.stack>.linkbtn{align-self:flex-start}
+</style>
+
+<div class="app">
+  <div class="top">
+    <svg viewBox="0 0 40 200" width="14" height="56" aria-hidden="true" style="flex:none"><circle cx="20" cy="14" r="10" fill="var(--amber)"></circle><line x1="20" y1="44" x2="20" y2="194" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"></line></svg>
+    <div class="name"><span class="eb">Isakram · proof of concept</span><h1>Fødevarecentralen</h1></div>
+  </div>
+  <div class="seg role" role="group" aria-label="Vælg rolle">
+    <button id="r-kunde" data-role="kunde" aria-pressed="true">Kunde</button>
+    <button id="r-producent" data-role="producent" aria-pressed="false">Bliv producent</button>
+    <button id="r-shop" data-role="shop" aria-pressed="false" hidden>Din shop</button>
+    <button id="r-admin" data-role="admin" aria-pressed="false">Isakram</button>
+  </div>
+  <div id="notice" class="banner" hidden></div>
+  <main id="view"></main>
+</div>
+<div id="sheet-root"></div>
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+(function(){
+const FEE = 0.10;
+const CATS = ['Grønt','Mejeri','Kød og fisk','Bageri','Mel og korn','Honning og syltet','Andet'];
+const SHELVES = ['1 Lokal','1 Basis','1 Hjem','1 Krop'];
+const S = {producers:[],listings:[],products:[],reservations:[],role:'kunde',ready:false,me:null,
+  acting:null, sheet:null, qty:{}, onlyLast:false, pin:null, cat:'Grønt', exp:1, kitchen:true, busy:false,
+  ptab:'overblik', pform:false, atab:'overblik', cq:'', ctype:'alle', cprod:'', sellRate:.5, kday:0, bform:false, pform2:false, pantry:[], batches:[], books:[], recipes:[], scan:null, bookFile:null, bookTitle:'', delBook:null, ai:null, bprefill:null, su:null, fcat:'', myPos:{name:'Storvorde',lat:57.00392,lng:10.10125}, radius:20, shelf:'1 Lokal', inBox:true, photo:null, fromProduct:null};
+let db=null, user=null;
+
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const kr = n => (Math.round(n*100)/100).toLocaleString('da-DK',{minimumFractionDigits:2,maximumFractionDigits:2})+' kr.';
+const r2 = n => Math.round(n*100)/100;
+const todayStr = () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const addDays = n => { const d=new Date(); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const daysLeft = iso => Math.round((new Date(iso+'T12:00:00') - new Date(todayStr()+'T12:00:00'))/864e5);
+// Prisen følger datoen: -20 % (3+ dage), -35 % (2 dage), -50 % (sidste dag)
+const discount = dl => dl<=0 ? .5 : dl===1 ? .35 : .2;
+const unitPrice = l => r2(l.normalPrice*(1-discount(daysLeft(l.expires))));
+function urgency(dl){ if(dl<=0) return {cls:'last',txt:'Sidste dag',color:'var(--red)'}; if(dl===1) return {cls:'two',txt:'2 dage',color:'var(--amber)'}; return {cls:'three',txt:(dl+1)+' dage',color:'var(--ink)'}; }
+const code = () => Array.from({length:4},()=> 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
+function toast(t){ const el=$('#toast'); el.textContent=t; el.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>el.hidden=true,2600); }
+const num = id => { const v=(document.getElementById(id)?.value||'').trim().replace(',','.'); return v===''?NaN:Number(v); };
+const val = id => (document.getElementById(id)?.value||'').trim();
+
+const prodById = id => S.producers.find(p=>p.id===id);
+const productById = id => S.products.find(p=>p.id===id);
+const approvedP = id => prodById(id)?.status==='approved';
+const live = () => S.listings.filter(l => l.status==='live' && l.qty>0 && daysLeft(l.expires)>=0 && approvedP(l.producerId));
+const shelf = () => S.products.filter(p => p.status==='approved' && !p.paused && p.stock>0 && approvedP(p.producerId));
+const myProducer = () => S.acting ? prodById(S.acting) : S.producers.find(p=>p.ownerId && p.ownerId===S.me);
+const thumb = (p,size=56) => p.image ? `<img src="${esc(p.image)}" alt="" style="width:${size}px;height:${size}px;border-radius:12px;object-fit:cover;flex:none">` : `<span class="ph" style="width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 40 200" height="${Math.round(size*.5)}"><circle cx="20" cy="14" r="10" fill="currentColor"></circle><line x1="20" y1="44" x2="20" y2="194" stroke="currentColor" stroke-width="6" stroke-linecap="round"></line></svg></span>`;
+
+/* ---------- map ---------- */
+function mapSvg({pins, edit=false, pinXY=null}){
+  const P = pins.map(p=>{
+    const x=p.x/100*390, y=p.y/100*280, r=p.r||9, c=p.color||'var(--ink)';
+    return `<g class="pin" tabindex="0" role="button" data-pid="${esc(p.id)}" aria-label="${esc(p.name)}"><circle cx="${x}" cy="${y-18}" r="${r}" fill="${c}" stroke="var(--ink)" stroke-width="2"></circle><line x1="${x}" y1="${y-18+r+3}" x2="${x}" y2="${y+8}" stroke="var(--ink)" stroke-width="4" stroke-linecap="round"></line></g>`;
+  }).join('');
+  const sel = pinXY ? `<g><circle cx="${pinXY.x/100*390}" cy="${pinXY.y/100*280-18}" r="11" fill="var(--amber)" stroke="var(--ink)" stroke-width="2"></circle><line x1="${pinXY.x/100*390}" y1="${pinXY.y/100*280-4}" x2="${pinXY.x/100*390}" y2="${pinXY.y/100*280+8}" stroke="var(--ink)" stroke-width="4" stroke-linecap="round"></line></g>` : '';
+  return `<div class="map"><svg viewBox="0 0 390 280" ${edit?'class="mapedit" id="mapedit"':''} role="img" aria-label="Kort over Gudumholm og omegn">
+    <rect width="390" height="280" fill="var(--map)"></rect>
+    <path d="M0 50 Q90 22 170 60 Q250 96 320 50 Q360 26 390 34 L390 0 L0 0 Z" fill="var(--water)"></path>
+    <path d="M0 200 Q80 180 140 215 T260 240 T390 210" fill="none" stroke="var(--road)" stroke-width="8"></path>
+    <path d="M120 280 Q140 210 175 150 T230 40" fill="none" stroke="var(--road)" stroke-width="6"></path>
+    <path d="M20 120 Q140 140 250 112 T390 128" fill="none" stroke="var(--road)" stroke-width="4"></path>
+    <ellipse cx="322" cy="246" rx="66" ry="34" fill="var(--sand)"></ellipse>
+    <text x="22" y="26" font-size="10" letter-spacing="2" fill="var(--muted)" font-family="Hanken Grotesk, sans-serif">LIMFJORDEN</text>
+    <text x="300" y="250" font-size="10" letter-spacing="2" fill="var(--muted)" font-family="Hanken Grotesk, sans-serif">MOSEN</text>
+    <circle cx="190" cy="160" r="58" fill="none" stroke="var(--ink)" stroke-opacity=".2" stroke-dasharray="4 5"></circle>
+    <circle cx="190" cy="160" r="7" fill="var(--you)" stroke="var(--road)" stroke-width="3"></circle>
+    ${P}${sel}</svg></div>`;
+}
+
+const GEO={"land":{"type":"MultiPolygon","coordinates":[[[[9.2553,56.5716,-999.0],[9.2561,56.5673,-999.0],[9.2598,56.5626,-999.0],[9.2605,56.5558,-999.0],[9.2682,56.55,-999.0],[9.2,56.55,-999.0],[9.2,56.6276,-999.0],[9.2108,56.63,-999.0],[9.2245,56.6273,-999.0],[9.2641,56.6284,-999.0],[9.2706,56.6254,-999.0],[9.2644,56.6272,-999.0],[9.258,56.6266,-999.0],[9.2625,56.623,-999.0],[9.2721,56.6255,-999.0],[9.2846,56.6221,-999.0],[9.2954,56.6093,-999.0],[9.2904,56.6095,-999.0],[9.2874,56.6045,-999.0],[9.2901,56.6025,-999.0],[9.2828,56.5988,-999.0],[9.2617,56.5918,-999.0],[9.2568,56.5932,-999.0],[9.2572,56.5878,-999.0],[9.2548,56.5829,-999.0],[9.2454,56.5741,-999.0],[9.2475,56.5718,-999.0],[9.2553,56.5716,-999.0]]],[[[9.2922,56.6063,-999.0],[9.3016,56.6079,-999.0],[9.3109,56.6163,-999.0],[9.3143,56.625,-999.0],[9.3119,56.6269,-999.0],[9.3119,56.6343,-999.0],[9.3156,56.6386,-999.0],[9.3203,56.64,-999.0],[9.3249,56.6522,-999.0],[9.3254,56.6596,-999.0],[9.3215,56.6692,-999.0],[9.3066,56.6923,-999.0],[9.2935,56.6981,-999.0],[9.2752,56.6981,-999.0],[9.2638,56.6953,-999.0],[9.2517,56.6891,-999.0],[9.2315,56.6877,-999.0],[9.2237,56.6815,-999.0],[9.2,56.6757,-999.0],[9.2,56.7032,-999.0],[9.2071,56.7093,-999.0],[9.2127,56.7104,-999.0],[9.2269,56.7204,-999.0],[9.2415,56.7369,-999.0],[9.2435,56.7455,-999.0],[9.2426,56.7519,-999.0],[9.2378,56.7586,-999.0],[9.2,56.7675,-999.0],[9.2,56.8341,-999.0],[9.2082,56.8421,-999.0],[9.2116,56.8529,-999.0],[9.2087,56.866,-999.0],[9.2,56.8735,-999.0],[9.2,56.9367,-999.0],[9.2141,56.9404,-999.0],[9.224,56.949,-999.0],[9.2288,56.9495,-999.0],[9.2373,56.9626,-999.0],[9.2423,56.9669,-999.0],[9.261,56.9712,-999.0],[9.2761,56.9721,-999.0],[9.2832,56.9774,-999.0],[9.2829,56.9815,-999.0],[9.287,56.9869,-999.0],[9.2879,56.9928,-999.0],[9.293,56.9973,-999.0],[9.3327,57.0022,-999.0],[9.3536,57.0082,-999.0],[9.4276,57.0172,-999.0],[9.4892,57.0159,-999.0],[9.5102,57.0131,-999.0],[9.555,57.0006,-999.0],[9.5833,56.988,-999.0],[9.58,56.9843,-999.0],[9.5736,56.9829,-999.0],[9.5687,56.9788,-999.0],[9.565,56.9705,-999.0],[9.5682,56.9652,-999.0],[9.5764,56.9615,-999.0],[9.5706,56.9625,-999.0],[9.5722,56.9601,-999.0],[9.5651,56.9553,-999.0],[9.5593,56.9599,-999.0],[9.5567,56.965,-999.0],[9.5498,56.9657,-999.0],[9.5372,56.9543,-999.0],[9.5484,56.9443,-999.0],[9.552,56.9366,-999.0],[9.5595,56.9338,-999.0],[9.5596,56.9318,-999.0],[9.5675,56.9254,-999.0],[9.5725,56.9281,-999.0],[9.5734,56.9403,-999.0],[9.5781,56.9522,-999.0],[9.5747,56.9579,-999.0],[9.5793,56.9609,-999.0],[9.5773,56.9615,-999.0],[9.5842,56.9616,-999.0],[9.5932,56.9646,-999.0],[9.5975,56.9634,-999.0],[9.6061,56.9645,-999.0],[9.6196,56.9696,-999.0],[9.6299,56.9821,-999.0],[9.631,56.9873,-999.0],[9.6352,56.9877,-999.0],[9.6333,56.9889,-999.0],[9.6405,56.9888,-999.0],[9.6709,57.011,-999.0],[9.6721,57.0187,-999.0],[9.67,57.0238,-999.0],[9.6716,57.0274,-999.0],[9.6778,57.0335,-999.0],[9.684,57.0366,-999.0],[9.6982,57.0409,-999.0],[9.7443,57.0458,-999.0],[9.7783,57.0522,-999.0],[9.8091,57.0492,-999.0],[9.8233,57.0448,-999.0],[9.8433,57.0432,-999.0],[9.8575,57.0472,-999.0],[9.8678,57.054,-999.0],[9.879,57.0563,-999.0],[9.8792,57.0584,-999.0],[9.8939,57.0597,-999.0],[9.8936,57.0578,-999.0],[9.9081,57.0573,-999.0],[9.9299,57.049,-999.0],[9.9446,57.0496,-999.0],[9.9567,57.0546,-999.0],[9.959,57.0529,-999.0],[9.9584,57.0549,-999.0],[9.9692,57.0614,-999.0],[9.9746,57.0686,-999.0],[9.9788,57.069,-999.0],[9.9976,57.0783,-999.0],[10.0044,57.0791,-999.0],[10.0246,57.0764,-999.0],[10.0373,57.0608,-999.0],[10.0507,57.0545,-999.0],[10.0493,57.0532,-999.0],[10.0508,57.0523,-999.0],[10.0579,57.0506,-999.0],[10.052,57.0486,-999.0],[10.0538,57.0471,-999.0],[10.0627,57.05,-999.0],[10.0656,57.0485,-999.0],[10.0627,57.0451,-999.0],[10.0639,57.0433,-999.0],[10.0705,57.043,-999.0],[10.0962,57.0343,-999.0],[10.1224,57.0207,-999.0],[10.1242,57.017,-999.0],[10.1372,57.0089,-999.0],[10.1924,56.9868,-999.0],[10.2313,56.979,-999.0],[10.3008,56.9827,-999.0],[10.3028,56.9864,-999.0],[10.3051,56.9849,-999.0],[10.3043,56.9831,-999.0],[10.3068,56.9825,-999.0],[10.3039,56.9817,-999.0],[10.2991,56.973,-999.0],[10.2989,56.9657,-999.0],[10.2897,56.9656,-999.0],[10.2826,56.959,-999.0],[10.2848,56.9575,-999.0],[10.2837,56.9552,-999.0],[10.29,56.9573,-999.0],[10.2914,56.9547,-999.0],[10.272,56.9379,-999.0],[10.2691,56.9158,-999.0],[10.2644,56.907,-999.0],[10.2641,56.8953,-999.0],[10.2618,56.8936,-999.0],[10.2662,56.885,-999.0],[10.2669,56.8542,-999.0],[10.2679,56.8493,-999.0],[10.2704,56.85,-999.0],[10.271,56.847,-999.0],[10.2708,56.8318,-999.0],[10.2744,56.8129,-999.0],[10.2773,56.806,-999.0],[10.2818,56.8057,-999.0],[10.2762,56.8041,-999.0],[10.2765,56.8017,-999.0],[10.2859,56.7844,-999.0],[10.2894,56.7758,-999.0],[10.2878,56.7756,-999.0],[10.2882,56.7739,-999.0],[10.2974,56.7586,-999.0],[10.2976,56.7546,-999.0],[10.3077,56.7433,-999.0],[10.3332,56.7235,-999.0],[10.3343,56.7155,-999.0],[10.3312,56.7142,-999.0],[10.3327,56.7083,-999.0],[10.3287,56.7067,-999.0],[10.3294,56.7052,-999.0],[10.3246,56.7042,-999.0],[10.3,56.711,-999.0],[10.2531,56.7128,-999.0],[10.2387,56.7156,-999.0],[10.236,56.7165,-999.0],[10.2359,56.7186,-999.0],[10.2258,56.72,-999.0],[10.2193,56.7196,-999.0],[10.2097,56.7156,-999.0],[10.2037,56.7118,-999.0],[10.1992,56.7056,-999.0],[10.182,56.7032,-999.0],[10.1656,56.7082,-999.0],[10.161,56.7144,-999.0],[10.1626,56.7195,-999.0],[10.1501,56.7175,-999.0],[10.1525,56.7194,-999.0],[10.1434,56.7206,-999.0],[10.142,56.7186,-999.0],[10.118,56.7152,-999.0],[10.105,56.71,-999.0],[10.1,56.7043,-999.0],[10.1004,56.7005,-999.0],[10.0827,56.6963,-999.0],[10.0822,56.6939,-999.0],[10.0752,56.6937,-999.0],[10.0719,56.6989,-999.0],[10.0613,56.702,-999.0],[10.0426,56.6987,-999.0],[10.0415,56.6958,-999.0],[10.039,56.6948,-999.0],[10.0247,56.6945,-999.0],[10.0158,56.69,-999.0],[10.0134,56.6866,-999.0],[10.0151,56.6813,-999.0],[9.9858,56.6788,-999.0],[9.9711,56.6721,-999.0],[9.9635,56.6658,-999.0],[9.9488,56.6667,-999.0],[9.9538,56.6638,-999.0],[9.9566,56.6579,-999.0],[9.9481,56.6601,-999.0],[9.9362,56.6566,-999.0],[9.9354,56.6535,-999.0],[9.9295,56.655,-999.0],[9.9182,56.6513,-999.0],[9.9015,56.6525,-999.0],[9.8872,56.6496,-999.0],[9.8539,56.6496,-999.0],[9.8459,56.6458,-999.0],[9.8218,56.6463,-999.0],[9.7997,56.6387,-999.0],[9.8117,56.6376,-999.0],[9.8168,56.6401,-999.0],[9.8312,56.6397,-999.0],[9.8445,56.6367,-999.0],[9.8601,56.6445,-999.0],[9.8634,56.6433,-999.0],[9.8804,56.6456,-999.0],[9.8835,56.6442,-999.0],[9.9046,56.6473,-999.0],[9.9071,56.6453,-999.0],[9.9251,56.6456,-999.0],[9.9399,56.6499,-999.0],[9.9485,56.6477,-999.0],[9.9598,56.6499,-999.0],[9.9685,56.6555,-999.0],[9.9827,56.653,-999.0],[9.9864,56.6571,-999.0],[9.9824,56.6584,-999.0],[9.9901,56.6617,-999.0],[9.9929,56.6653,-999.0],[10.0016,56.6654,-999.0],[10.0105,56.6714,-999.0],[10.0192,56.6695,-999.0],[10.0314,56.6727,-999.0],[10.0322,56.6779,-999.0],[10.0505,56.6907,-999.0],[10.0588,56.6916,-999.0],[10.0601,56.6892,-999.0],[10.0766,56.6824,-999.0],[10.087,56.6829,-999.0],[10.0867,56.6846,-999.0],[10.0906,56.685,-999.0],[10.0932,56.6881,-999.0],[10.0985,56.6884,-999.0],[10.112,56.6966,-999.0],[10.1122,56.7053,-999.0],[10.1189,56.7129,-999.0],[10.1248,56.7096,-999.0],[10.1371,56.7101,-999.0],[10.1396,56.7075,-999.0],[10.1533,56.7046,-999.0],[10.1554,56.7054,-999.0],[10.1474,56.7074,-999.0],[10.1642,56.7062,-999.0],[10.1826,56.6935,-999.0],[10.1855,56.6885,-999.0],[10.1903,56.6856,-999.0],[10.205,56.6819,-999.0],[10.2516,56.6982,-999.0],[10.2668,56.6984,-999.0],[10.2842,56.6934,-999.0],[10.3016,56.6969,-999.0],[10.3095,56.7011,-999.0],[10.3385,56.7015,-999.0],[10.352,56.6938,-999.0],[10.363,56.6617,-999.0],[10.3521,56.6611,-999.0],[10.3498,56.658,-999.0],[10.3602,56.6456,-999.0],[10.3565,56.6351,-999.0],[10.3538,56.6347,-999.0],[10.3434,56.6231,-999.0],[10.3359,56.62,-999.0],[10.3227,56.6183,-999.0],[10.3074,56.6127,-999.0],[10.306,56.6118,-999.0],[10.3073,56.6106,-999.0],[10.3037,56.6111,-999.0],[10.2927,56.6066,-999.0],[10.2757,56.592,-999.0],[10.2805,56.5937,-999.0],[10.2824,56.5914,-999.0],[10.2645,56.5882,-999.0],[10.2544,56.5829,-999.0],[10.2512,56.5786,-999.0],[10.2427,56.5802,-999.0],[10.2464,56.5781,-999.0],[10.2433,56.5755,-999.0],[10.2434,56.5688,-999.0],[10.2406,56.5685,-999.0],[10.2415,56.5663,-999.0],[10.2355,56.5587,-999.0],[10.2294,56.5547,-999.0],[10.2213,56.5556,-999.0],[10.2188,56.55,-999.0],[9.3663,56.55,-999.0],[9.3682,56.5619,-999.0],[9.3758,56.5658,-999.0],[9.368,56.568,-999.0],[9.3509,56.5639,-999.0],[9.3385,56.5578,-999.0],[9.3032,56.5519,-999.0],[9.2919,56.5556,-999.0],[9.2869,56.5642,-999.0],[9.2919,56.5865,-999.0],[9.2981,56.5984,-999.0],[9.298,56.602,-999.0],[9.2922,56.6063,-999.0]]],[[[9.2,56.7244,-999.0],[9.2,56.7265,-999.0],[9.2002,56.7264,-999.0],[9.2,56.7244,-999.0]]],[[[9.5913,56.9834,-999.0],[9.5914,56.985,-999.0],[9.5968,56.9849,-999.0],[9.6016,56.9813,-999.0],[9.6077,56.9835,-999.0],[9.6118,56.9807,-999.0],[9.5974,56.9804,-999.0],[9.5913,56.9834,-999.0]]],[[[9.2459,56.9882,-999.0],[9.266,56.9905,-999.0],[9.2518,56.9837,-999.0],[9.2478,56.9841,-999.0],[9.2459,56.9882,-999.0]]],[[[9.2375,56.9908,-999.0],[9.2303,56.9942,-999.0],[9.2413,56.9909,-999.0],[9.2375,56.9908,-999.0]]],[[[9.235,56.9912,-999.0],[9.2272,56.9916,-999.0],[9.2222,56.9942,-999.0],[9.2302,56.994,-999.0],[9.235,56.9912,-999.0]]],[[[9.5621,57.0025,-999.0],[9.55,57.0115,-999.0],[9.5549,57.013,-999.0],[9.5645,57.0118,-999.0],[9.5676,57.0092,-999.0],[9.5671,57.0075,-999.0],[9.5725,57.0053,-999.0],[9.5621,57.0025,-999.0]]],[[[9.2878,57.0015,-999.0],[9.2641,56.9961,-999.0],[9.2636,56.9944,-999.0],[9.2734,56.9971,-999.0],[9.2644,56.9937,-999.0],[9.2405,56.9915,-999.0],[9.232,56.9961,-999.0],[9.2347,56.9939,-999.0],[9.2207,56.9956,-999.0],[9.2,57.0054,-999.0],[9.2,57.139,-999.0],[9.2712,57.1438,-999.0],[9.3209,57.1545,-999.0],[9.3672,57.1564,-999.0],[9.3919,57.1614,-999.0],[9.4194,57.171,-999.0],[9.5295,57.2193,-999.0],[9.5576,57.2386,-999.0],[9.5969,57.2702,-999.0],[9.6364,57.3037,-999.0],[9.6803,57.3447,-999.0],[9.7041,57.3717,-999.0],[9.7164,57.3797,-999.0],[9.7348,57.3999,-999.0],[9.7716,57.45,-999.0],[10.5474,57.45,-999.0],[10.5512,57.4486,-999.0],[10.5569,57.45,-999.0],[10.561,57.4475,-999.0],[10.5559,57.4433,-999.0],[10.5591,57.4419,-999.0],[10.5555,57.4397,-999.0],[10.5483,57.4439,-999.0],[10.5453,57.442,-999.0],[10.5525,57.4374,-999.0],[10.5517,57.436,-999.0],[10.5429,57.4396,-999.0],[10.5395,57.438,-999.0],[10.5388,57.4356,-999.0],[10.546,57.4347,-999.0],[10.5458,57.4335,-999.0],[10.5357,57.4336,-999.0],[10.5349,57.4307,-999.0],[10.5287,57.4307,-999.0],[10.5261,57.4277,-999.0],[10.528,57.4267,-999.0],[10.5295,57.4197,-999.0],[10.5284,57.4165,-999.0],[10.5245,57.4138,-999.0],[10.5249,57.4049,-999.0],[10.5223,57.4034,-999.0],[10.5166,57.3914,-999.0],[10.515,57.3825,-999.0],[10.5178,57.3598,-999.0],[10.5225,57.3441,-999.0],[10.5282,57.3358,-999.0],[10.5349,57.3319,-999.0],[10.529,57.329,-999.0],[10.5274,57.324,-999.0],[10.5429,57.282,-999.0],[10.5497,57.2556,-999.0],[10.5472,57.2269,-999.0],[10.5416,57.226,-999.0],[10.544,57.2289,-999.0],[10.5423,57.229,-999.0],[10.5399,57.2243,-999.0],[10.5275,57.216,-999.0],[10.5124,57.2091,-999.0],[10.493,57.2048,-999.0],[10.4947,57.204,-999.0],[10.4774,57.1962,-999.0],[10.4458,57.1735,-999.0],[10.4311,57.1586,-999.0],[10.4215,57.1464,-999.0],[10.428,57.1453,-999.0],[10.4256,57.1446,-999.0],[10.4272,57.143,-999.0],[10.42,57.1403,-999.0],[10.4225,57.1443,-999.0],[10.4186,57.1434,-999.0],[10.4056,57.1212,-999.0],[10.402,57.1201,-999.0],[10.4006,57.1137,-999.0],[10.4058,57.1128,-999.0],[10.4001,57.1132,-999.0],[10.3868,57.0844,-999.0],[10.3767,57.0586,-999.0],[10.3793,57.0583,-999.0],[10.384,57.0672,-999.0],[10.3812,57.0568,-999.0],[10.3762,57.0566,-999.0],[10.3769,57.0522,-999.0],[10.3745,57.0521,-999.0],[10.3716,57.0458,-999.0],[10.3757,57.0489,-999.0],[10.3721,57.0434,-999.0],[10.3705,57.0442,-999.0],[10.3688,57.041,-999.0],[10.371,57.0427,-999.0],[10.3714,57.041,-999.0],[10.3526,57.0113,-999.0],[10.3328,56.9893,-999.0],[10.315,56.9921,-999.0],[10.3103,56.9895,-999.0],[10.3083,56.9916,-999.0],[10.3042,56.9907,-999.0],[10.305,56.9924,-999.0],[10.3001,56.994,-999.0],[10.2725,56.9914,-999.0],[10.2582,56.9863,-999.0],[10.2332,56.9874,-999.0],[10.2223,56.9896,-999.0],[10.1807,57.0071,-999.0],[10.1714,57.0148,-999.0],[10.1526,57.023,-999.0],[10.1094,57.0469,-999.0],[10.1032,57.0477,-999.0],[10.0938,57.0534,-999.0],[10.0879,57.0528,-999.0],[10.0782,57.0553,-999.0],[10.0446,57.0712,-999.0],[10.0393,57.0716,-999.0],[10.0311,57.0795,-999.0],[10.0133,57.0888,-999.0],[10.0037,57.0897,-999.0],[9.9912,57.0879,-999.0],[9.971,57.0802,-999.0],[9.9652,57.0755,-999.0],[9.9604,57.0752,-999.0],[9.9626,57.0734,-999.0],[9.9599,57.0708,-999.0],[9.958,57.072,-999.0],[9.9554,57.0704,-999.0],[9.9586,57.0695,-999.0],[9.9578,57.064,-999.0],[9.9541,57.059,-999.0],[9.9559,57.058,-999.0],[9.9355,57.0536,-999.0],[9.9236,57.0556,-999.0],[9.9056,57.0618,-999.0],[9.9057,57.0632,-999.0],[9.8967,57.0632,-999.0],[9.8798,57.0674,-999.0],[9.8699,57.0717,-999.0],[9.8716,57.073,-999.0],[9.866,57.0766,-999.0],[9.8443,57.086,-999.0],[9.8376,57.0912,-999.0],[9.8274,57.0925,-999.0],[9.8238,57.0954,-999.0],[9.7946,57.1034,-999.0],[9.7874,57.1076,-999.0],[9.7809,57.1068,-999.0],[9.778,57.1085,-999.0],[9.776,57.107,-999.0],[9.7772,57.1028,-999.0],[9.7809,57.1009,-999.0],[9.7766,57.0952,-999.0],[9.783,57.0954,-999.0],[9.7823,57.099,-999.0],[9.7915,57.0955,-999.0],[9.7875,57.0935,-999.0],[9.7834,57.0947,-999.0],[9.7761,57.0932,-999.0],[9.7715,57.086,-999.0],[9.757,57.0745,-999.0],[9.7591,57.0738,-999.0],[9.7681,57.081,-999.0],[9.7664,57.0787,-999.0],[9.7589,57.0719,-999.0],[9.7474,57.0668,-999.0],[9.7022,57.0625,-999.0],[9.6889,57.0683,-999.0],[9.6662,57.0745,-999.0],[9.6512,57.0713,-999.0],[9.6489,57.0789,-999.0],[9.6516,57.0826,-999.0],[9.6704,57.0853,-999.0],[9.6724,57.0884,-999.0],[9.6778,57.0894,-999.0],[9.6814,57.093,-999.0],[9.6818,57.0958,-999.0],[9.671,57.0967,-999.0],[9.668,57.0949,-999.0],[9.6665,57.0951,-999.0],[9.6683,57.0962,-999.0],[9.6566,57.0944,-999.0],[9.6574,57.0934,-999.0],[9.6384,57.0884,-999.0],[9.6299,57.0833,-999.0],[9.6267,57.0849,-999.0],[9.6246,57.0834,-999.0],[9.6255,57.0816,-999.0],[9.6213,57.0816,-999.0],[9.6229,57.0806,-999.0],[9.6208,57.0788,-999.0],[9.6114,57.075,-999.0],[9.6234,57.0688,-999.0],[9.6376,57.0699,-999.0],[9.6423,57.0683,-999.0],[9.6244,57.0615,-999.0],[9.6227,57.0574,-999.0],[9.6118,57.0496,-999.0],[9.5988,57.0488,-999.0],[9.5884,57.0504,-999.0],[9.5802,57.0463,-999.0],[9.578,57.0437,-999.0],[9.5791,57.0422,-999.0],[9.584,57.0437,-999.0],[9.5775,57.041,-999.0],[9.5454,57.0448,-999.0],[9.5078,57.0447,-999.0],[9.4963,57.0419,-999.0],[9.4882,57.0459,-999.0],[9.4568,57.0388,-999.0],[9.4466,57.0395,-999.0],[9.4144,57.0345,-999.0],[9.4013,57.0305,-999.0],[9.4029,57.0278,-999.0],[9.3973,57.0295,-999.0],[9.3757,57.0237,-999.0],[9.3534,57.0236,-999.0],[9.3083,57.0122,-999.0],[9.2928,57.0044,-999.0],[9.3005,57.0075,-999.0],[9.2912,56.9993,-999.0],[9.2878,57.0015,-999.0]]],[[[9.5057,57.0178,-999.0],[9.5103,57.0183,-999.0],[9.5151,57.0168,-999.0],[9.5073,57.0162,-999.0],[9.5057,57.0178,-999.0]]],[[[9.4863,57.03,-999.0],[9.4874,57.0307,-999.0],[9.4933,57.0301,-999.0],[9.4887,57.0287,-999.0],[9.4863,57.03,-999.0]]],[[[10.2526,56.5575,-999.0],[10.258,56.5632,-999.0],[10.2622,56.5647,-999.0],[10.2731,56.5765,-999.0],[10.2871,56.5805,-999.0],[10.2923,56.5858,-999.0],[10.3027,56.5914,-999.0],[10.302,56.5977,-999.0],[10.2999,56.6003,-999.0],[10.3011,56.6064,-999.0],[10.3064,56.6072,-999.0],[10.3129,56.6057,-999.0],[10.3184,56.601,-999.0],[10.3269,56.601,-999.0],[10.3431,56.5957,-999.0],[10.3453,56.5799,-999.0],[10.3486,56.5739,-999.0],[10.3603,56.5614,-999.0],[10.3764,56.55,-999.0],[10.2502,56.55,-999.0],[10.2548,56.5539,-999.0],[10.2526,56.5575,-999.0]]],[[[10.2807,56.7033,-999.0],[10.2728,56.7049,-999.0],[10.2694,56.7064,-999.0],[10.2868,56.7044,-999.0],[10.2807,56.7033,-999.0]]],[[[10.2393,56.707,-999.0],[10.2299,56.7052,-999.0],[10.2261,56.7074,-999.0],[10.2356,56.7102,-999.0],[10.2393,56.707,-999.0]]],[[[10.2646,56.7117,-999.0],[10.2743,56.7112,-999.0],[10.2784,56.7105,-999.0],[10.2646,56.7117,-999.0]]],[[[9.8164,57.0633,-999.0],[9.8131,57.0685,-999.0],[9.8143,57.0717,-999.0],[9.8432,57.075,-999.0],[9.8586,57.073,-999.0],[9.8648,57.0677,-999.0],[9.8756,57.0642,-999.0],[9.8754,57.0616,-999.0],[9.8702,57.061,-999.0],[9.8578,57.0553,-999.0],[9.8433,57.0537,-999.0],[9.8244,57.0584,-999.0],[9.8164,57.0633,-999.0]]],[[[9.7809,57.0747,-999.0],[9.7875,57.0765,-999.0],[9.7897,57.076,-999.0],[9.788,57.0741,-999.0],[9.7817,57.0734,-999.0],[9.7809,57.0747,-999.0]]],[[[9.8324,57.0824,-999.0],[9.8283,57.0812,-999.0],[9.8249,57.0822,-999.0],[9.8269,57.083,-999.0],[9.8324,57.0824,-999.0]]],[[[10.3206,56.6135,-999.0],[10.3296,56.6147,-999.0],[10.331,56.6145,-999.0],[10.3239,56.6119,-999.0],[10.3206,56.6135,-999.0]]],[[[10.3425,56.9953,-999.0],[10.3415,56.9912,-999.0],[10.3392,56.9885,-999.0],[10.3386,56.9889,-999.0],[10.3425,56.9953,-999.0]]],[[[10.9954,57.2073,-999.0],[11.0,57.21,-999.0],[11.0,57.2007,-999.0],[10.9973,57.1994,-999.0],[10.9934,57.2022,-999.0],[10.9954,57.2073,-999.0]]],[[[10.9884,57.2076,-999.0],[11.0,57.2108,-999.0],[10.9943,57.2073,-999.0],[10.9919,57.204,-999.0],[10.9929,57.2033,-999.0],[10.9877,57.2047,-999.0],[10.9884,57.2076,-999.0]]],[[[10.9546,57.2112,-999.0],[10.9587,57.2119,-999.0],[10.9658,57.2111,-999.0],[10.9612,57.2092,-999.0],[10.9546,57.2112,-999.0]]],[[[10.985,57.2165,-999.0],[10.9883,57.2169,-999.0],[10.9923,57.2156,-999.0],[10.9825,57.2135,-999.0],[10.985,57.2165,-999.0]]],[[[10.9719,57.2193,-999.0],[10.9744,57.2183,-999.0],[10.9757,57.2168,-999.0],[10.9704,57.2165,-999.0],[10.9719,57.2193,-999.0]]],[[[10.9504,57.2195,-999.0],[10.9543,57.2206,-999.0],[10.9568,57.2192,-999.0],[10.9537,57.2162,-999.0],[10.9503,57.2177,-999.0],[10.9504,57.2195,-999.0]]],[[[10.894,57.2429,-999.0],[10.8923,57.2459,-999.0],[10.8958,57.2471,-999.0],[10.8981,57.245,-999.0],[10.9173,57.2408,-999.0],[10.9051,57.2397,-999.0],[10.894,57.2429,-999.0]]],[[[10.8578,57.2642,-999.0],[10.8662,57.2631,-999.0],[10.8593,57.2633,-999.0],[10.863,57.2621,-999.0],[10.8604,57.2611,-999.0],[10.8634,57.2582,-999.0],[10.8679,57.2589,-999.0],[10.8709,57.2548,-999.0],[10.8802,57.2501,-999.0],[10.8799,57.2487,-999.0],[10.8898,57.245,-999.0],[10.9012,57.2367,-999.0],[10.8944,57.2372,-999.0],[10.8602,57.2596,-999.0],[10.8569,57.2648,-999.0],[10.8573,57.2658,-999.0],[10.864,57.2656,-999.0],[10.8578,57.2642,-999.0]]],[[[10.9951,57.2173,-999.0],[10.9904,57.2172,-999.0],[10.9946,57.2191,-999.0],[10.9914,57.2196,-999.0],[10.9933,57.2215,-999.0],[10.9903,57.2198,-999.0],[10.9869,57.222,-999.0],[10.9894,57.2187,-999.0],[10.9774,57.216,-999.0],[10.9735,57.2195,-999.0],[10.9742,57.2215,-999.0],[10.9719,57.2231,-999.0],[10.9702,57.2292,-999.0],[10.9665,57.2302,-999.0],[10.968,57.2335,-999.0],[10.9645,57.2325,-999.0],[10.9474,57.2362,-999.0],[10.9493,57.2398,-999.0],[10.9448,57.2411,-999.0],[10.9429,57.2444,-999.0],[10.9236,57.2469,-999.0],[10.9144,57.2436,-999.0],[10.8846,57.2502,-999.0],[10.871,57.2562,-999.0],[10.8709,57.2623,-999.0],[10.8729,57.265,-999.0],[10.8864,57.2695,-999.0],[10.906,57.2794,-999.0],[10.919,57.2906,-999.0],[10.9221,57.2947,-999.0],[10.9205,57.2968,-999.0],[10.9238,57.2952,-999.0],[10.9357,57.3001,-999.0],[10.9521,57.303,-999.0],[10.9655,57.3025,-999.0],[10.9757,57.3048,-999.0],[10.9754,57.3063,-999.0],[11.0,57.3048,-999.0],[11.0,57.2192,-999.0],[10.9971,57.2196,-999.0],[10.9951,57.2173,-999.0]]],[[[10.9323,57.3636,-999.0],[10.928,57.3587,-999.0],[10.925,57.3602,-999.0],[10.9223,57.3585,-999.0],[10.9209,57.3596,-999.0],[10.9202,57.3586,-999.0],[10.9182,57.3585,-999.0],[10.9169,57.3594,-999.0],[10.9191,57.3588,-999.0],[10.923,57.3616,-999.0],[10.9274,57.3602,-999.0],[10.9323,57.3636,-999.0]]],[[[10.5819,57.45,-999.0],[10.5814,57.4492,-999.0],[10.5796,57.45,-999.0],[10.5819,57.45,-999.0]]]]},"roads":{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"t":"Major Highway"},"geometry":{"type":"LineString","coordinates":[[9.9553,57.1113],[9.9513,57.1298],[9.9361,57.1645],[9.9307,57.1826],[9.931,57.2051],[9.9385,57.2255],[9.9506,57.2442],[9.9872,57.29],[10.0,57.3104],[10.0106,57.3318],[10.023,57.366],[10.0336,57.4137],[10.0375,57.45]]}},{"type":"Feature","properties":{"t":"Major Highway"},"geometry":{"type":"LineString","coordinates":[[9.9553,57.0993],[10.1211,57.1647],[10.3118,57.2617],[10.3999,57.2973],[10.4322,57.3149],[10.4615,57.3372],[10.4866,57.3639],[10.5069,57.3948],[10.5131,57.4086],[10.5167,57.4228],[10.5159,57.437],[10.5096,57.45]]}},{"type":"Feature","properties":{"t":"Major Highway"},"geometry":{"type":"LineString","coordinates":[[9.9337,56.55],[9.9206,56.5565],[9.9026,56.5619],[9.8081,56.5816],[9.784,56.5911],[9.7662,56.6037],[9.7515,56.6229],[9.7458,56.6349],[9.7377,56.6601],[9.725,56.7199],[9.7123,56.7617],[9.7113,56.7694],[9.7137,56.7895],[9.7206,56.8085],[9.7303,56.8273],[9.7422,56.8445],[9.756,56.8602],[9.7715,56.8745],[9.8543,56.9369],[9.886,56.9708],[9.8995,56.9897],[9.9553,57.0993]]}},{"type":"Feature","properties":{"t":"Secondary Highway"},"geometry":{"type":"MultiLineString","coordinates":[[[9.7244,57.1491],[9.712,57.157],[9.7009,57.1665],[9.6916,57.1777],[9.6844,57.1904],[9.6799,57.2034],[9.6776,57.2168],[9.6784,57.2441],[9.686,57.2753],[9.6986,57.3052],[9.7151,57.3332],[9.7339,57.3593],[9.7526,57.3817],[9.7734,57.403],[9.7963,57.4218],[9.8213,57.4368],[9.8596,57.45]],[[10.0785,57.45],[10.0899,57.4474],[10.1126,57.4458],[10.1432,57.45]],[[10.4394,57.45],[10.4838,57.4421],[10.5288,57.4398]]]}},{"type":"Feature","properties":{"t":"Secondary Highway"},"geometry":{"type":"LineString","coordinates":[[9.2,57.0699],[9.3374,57.0992],[9.7249,57.1454],[9.7469,57.1449],[9.7688,57.142],[9.7904,57.1372],[9.9217,57.0981],[9.9673,57.0933]]}},{"type":"Feature","properties":{"t":"Ferry Route"},"geometry":{"type":"LineString","coordinates":[[10.5616,57.4278],[10.6488,57.45]]}},{"type":"Feature","properties":{"t":"Ferry Route"},"geometry":{"type":"LineString","coordinates":[[10.5318,57.45],[10.5288,57.4458]]}},{"type":"Feature","properties":{"t":"Road"},"geometry":{"type":"LineString","coordinates":[[10.5285,57.4329],[10.5206,57.4434],[10.5004,57.45]]}},{"type":"Feature","properties":{"t":"Road"},"geometry":{"type":"LineString","coordinates":[[9.9544,57.0594],[9.9517,57.0752],[9.9701,57.0848]]}},{"type":"Feature","properties":{"t":"Road"},"geometry":{"type":"LineString","coordinates":[[9.8404,56.8973],[9.7598,56.8841],[9.7186,56.8727],[9.6931,56.8525],[9.68,56.8306],[9.6528,56.8105],[9.6028,56.7912],[9.5643,56.771]]}},{"type":"Feature","properties":{"t":"Road"},"geometry":{"type":"LineString","coordinates":[[9.7913,56.6457],[9.8141,56.6746],[9.8264,56.6974],[9.8273,56.7228],[9.8115,56.7474],[9.8115,56.7973],[9.8088,56.8148],[9.8124,56.8411],[9.8176,56.8525],[9.836,56.871],[9.8404,56.8973]]}},{"type":"Feature","properties":{"t":"Road"},"geometry":{"type":"LineString","coordinates":[[9.8722,56.55],[9.8474,56.5633],[9.8185,56.5755],[9.8027,56.5939],[9.801,56.6299],[9.7913,56.6457]]}},{"type":"Feature","properties":{"t":"Road"},"geometry":{"type":"LineString","coordinates":[[9.5643,56.771],[9.545,56.7605],[9.5292,56.7412],[9.5239,56.7009],[9.5126,56.6465],[9.5012,56.6176],[9.4775,56.572],[9.4637,56.55]]}}]}};
+const TOWNS=[["Aalborg", 57.048, 9.9187], ["Nørresundby", 57.05877, 9.92284], ["Storvorde", 57.00392, 10.10125], ["Klarup", 57.01194, 10.05617], ["Gistrup", 56.9943, 9.99085], ["Hals", 56.99609, 10.30807], ["Gandrup", 57.05744, 10.18137], ["Vester Hassing", 57.06767, 10.12558], ["Vodskov", 57.10854, 10.02215], ["Dronninglund", 57.16035, 10.29287], ["Hjallerup", 57.16466, 10.14571], ["Nibe", 56.9815, 9.63917], ["Frejlev", 57.00623, 9.81711], ["Svenstrup", 56.9723, 9.84806], ["Støvring", 56.88536, 9.83839], ["Skørping", 56.83626, 9.89255], ["Vestbjerg", 57.13166, 9.95942], ["Sulsted", 57.16343, 9.95667]];
+const SHOP={name:'Isakram, Aagade 30, Storvorde',lat:57.0035,lng:10.1035};
+const toRad=d=>d*Math.PI/180;
+function km(a,b){ const R=6371, dLat=toRad(b.lat-a.lat), dLng=toRad(b.lng-a.lng); const h=Math.sin(dLat/2)**2+Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+const kmTxt = d => (d<10?d.toLocaleString('da-DK',{maximumFractionDigits:1}):Math.round(d))+' km';
+// Ældre producenter har kun x/y fra illustrationskortet: omregn til omtrentlige koordinater
+const pos = p => (p && p.lat!=null) ? {lat:+p.lat,lng:+p.lng} : {lat:57.18-(p?.y||50)/100*.36, lng:9.75+(p?.x||50)/100*.75};
+const distTo = p => km(S.myPos, pos(p));
+
+const MAPC={water:'#C9D1C9',land:'#EDE3CC',edge:'#D3C6A6',road:'#FBF7EC',casing:'#D8CBB0',ink:'#2A241D'};
+const maps={};
+function baseMap(el, opts={}){
+  const m=L.map(el,{renderer:L.svg({padding:1}), zoomControl:false, minZoom:9, maxZoom:16, maxBounds:[[56.62,9.30],[57.38,10.90]], maxBoundsViscosity:.8, zoomSnap:.5, ...opts});
+  m.attributionControl.setPrefix(false).addAttribution('Kortdata: Danmarks kommuner · Natural Earth · GeoNames');
+  L.control.zoom({position:'bottomright', zoomInTitle:'Zoom ind', zoomOutTitle:'Zoom ud'}).addTo(m);
+  L.geoJSON(GEO.land,{interactive:false, style:{color:MAPC.edge, weight:.8, fillColor:MAPC.land, fillOpacity:1}}).addTo(m);
+  L.geoJSON(GEO.roads,{interactive:false, style:f=>({color:MAPC.casing, weight:f.properties.t==='Major Highway'?7:5, opacity:1})}).addTo(m);
+  L.geoJSON(GEO.roads,{interactive:false, style:f=>({color:MAPC.road, weight:f.properties.t==='Major Highway'?4.5:3, opacity:1})}).addTo(m);
+  const towns=L.layerGroup(TOWNS.map(([n,la,ln])=>L.marker([la,ln],{interactive:false, keyboard:false, icon:L.divIcon({className:'town', html:`<span>${esc(n)}</span>`, iconSize:[0,0]})}))).addTo(m);
+  const big=['Aalborg','Hals','Storvorde','Nibe','Støvring','Dronninglund'];
+  const syncTowns=()=>{ const z=m.getZoom(); towns.eachLayer(t=>{ const n=t.getElement()?.textContent; if(t.getElement()) t.getElement().style.display = (z>=10.5 || big.includes(n)) ? '' : 'none'; }); };
+  m.on('zoomend', syncTowns); setTimeout(syncTowns);
+  return m;
+}
+const pinIcon=(color,r,dim,label)=>L.divIcon({className:'pinicon'+(dim?' dim':''), iconSize:[34,52], iconAnchor:[17,50], tooltipAnchor:[0,-44],
+  html:`<svg viewBox="0 0 34 52" width="34" height="52" aria-hidden="true"><circle cx="17" cy="${17}" r="${r}" fill="${color}" stroke="${MAPC.ink}" stroke-width="2.5"></circle><line x1="17" y1="${17+r+3}" x2="17" y2="49" stroke="${MAPC.ink}" stroke-width="4" stroke-linecap="round"></line></svg>${label?`<b>${esc(label)}</b>`:''}`});
+const meIcon=L.divIcon?L.divIcon({className:'meicon', iconSize:[22,22], iconAnchor:[11,11], html:'<i></i>'}):null;
+
+function customerMap(slot){
+  if(maps.kunde) return maps.kunde;
+  const el=document.createElement('div'); slot.appendChild(el); el.className='leaf'; el.setAttribute('aria-label','Kort over producenter nær dig');
+  const m=baseMap(el); m.setView([S.myPos.lat,S.myPos.lng],11);
+  const pins=L.layerGroup().addTo(m);
+  const circle=L.circle([S.myPos.lat,S.myPos.lng],{radius:S.radius*1000, color:MAPC.ink, weight:1.2, dashArray:'5 6', fill:true, fillColor:MAPC.ink, fillOpacity:.03, interactive:false}).addTo(m);
+  const me=L.marker([S.myPos.lat,S.myPos.lng],{draggable:true, icon:meIcon, zIndexOffset:1000, title:'Din position. Træk for at flytte'}).addTo(m);
+  me.bindTooltip('Dig',{direction:'right',offset:[10,0]});
+  me.on('dragend',()=>{ const ll=me.getLatLng(); S.myPos={name:'Valgt punkt',lat:ll.lat,lng:ll.lng}; render(); });
+  m.on('contextmenu',e=>{ S.myPos={name:'Valgt punkt',lat:e.latlng.lat,lng:e.latlng.lng}; render(); });
+  maps.kunde={el,m,pins,circle,me,fitKey:''};
+  return maps.kunde;
+}
+function pickMap(slot){
+  if(maps.pick) return maps.pick;
+  const el=document.createElement('div'); slot.appendChild(el); el.className='leaf pick'; el.setAttribute('aria-label','Kort: tryk for at sætte jeres afhentningssted');
+  const m=baseMap(el); m.setView([S.myPos.lat,S.myPos.lng],11);
+  let mk=null;
+  const place=ll=>{ S.pin={lat:+ll.lat.toFixed(5),lng:+ll.lng.toFixed(5)}; if(!mk){ mk=L.marker(ll,{draggable:true, icon:pinIcon('#C5853B',11,false)}).addTo(m); mk.on('dragend',()=>place(mk.getLatLng())); } else mk.setLatLng(ll); const o=document.getElementById('pin-txt'); if(o) o.textContent=pinTxt(); };
+  m.on('click',e=>place(e.latlng));
+  maps.pick={el,m,place,hasPin:()=>!!mk,clear:()=>{ if(mk){ m.removeLayer(mk); mk=null; } }};
+  return maps.pick;
+}
+function nearestTown(p){ let best=null; TOWNS.forEach(([n,la,ln])=>{ const d=km(p,{lat:la,lng:ln}); if(!best||d<best.d) best={n,d}; }); return best; }
+function pinTxt(){ if(!S.pin) return 'Tryk på kortet, hvor kunderne henter.'; const t=nearestTown(S.pin); return `Placeret ${t.d<1?'i':kmTxt(t.d)+' fra'} ${t.n}. Træk nålen for at justere.`; }
+
+function placeMaps(){
+  if(!window.L){ return; }
+  const slot=document.querySelector('[data-mapslot="kunde"]');
+  if(slot){
+    const k=customerMap(slot); if(k.el.parentNode!==slot) slot.appendChild(k.el); k.m.invalidateSize({pan:false}); k.m.fire('moveend');
+    k.pins.clearLayers();
+    (S._pins||[]).forEach(p=>{
+      const mk=L.marker([p.lat,p.lng],{icon:catPin(p.cat,p.ring,p.dim,p.thin,p.more), title:p.name+' · '+p.cats, riseOnHover:true, zIndexOffset:p.dim?0:(p.thin?400:500)});
+      mk.bindTooltip(`${esc(p.name)} · ${esc(p.cat)}${p.tag?' · '+esc(p.tag):''}`,{direction:'top'});
+      mk.on('click',()=>{ S.sheet={type:'producer',pid:p.id}; S.qty={}; render(); });
+      mk.addTo(k.pins);
+    });
+    L.marker([SHOP.lat,SHOP.lng],{interactive:false, keyboard:false, icon:L.divIcon({className:'shopicon', iconSize:[18,18], iconAnchor:[9,9], html:'<i></i>'})}).addTo(k.pins);
+    k.me.setLatLng([S.myPos.lat,S.myPos.lng]); k.circle.setLatLng([S.myPos.lat,S.myPos.lng]); k.circle.setRadius((S.radius||60)*1000);
+    const key=S.myPos.lat+','+S.myPos.lng+','+S.radius;
+    if(k.fitKey!==key){ k.fitKey=key; if(S.radius) k.m.fitBounds(L.latLng(S.myPos.lat,S.myPos.lng).toBounds(S.radius*2000),{padding:[12,12]}); else k.m.setView([57.02,10.0],10); }
+  }
+  const ps=document.querySelector('[data-mapslot="pick"]');
+  if(ps){ const k=pickMap(ps); if(k.el.parentNode!==ps) ps.appendChild(k.el); k.m.invalidateSize({pan:false}); k.m.fire('moveend'); if(!S.pin) k.clear(); else if(!k.hasPin()){ k.place(L.latLng(S.pin.lat,S.pin.lng)); k.m.setView([S.pin.lat,S.pin.lng],13); } }
+}
+
+/* ---------- kategorier med ikoner ---------- */
+const CATDEF = {
+  'Grønt':            '<path d="M5 19C5 10 11 5 19 5c0 8-5 14-14 14z"/><path d="M5 19l8-8"/>',
+  'Mejeri':           '<path d="M8 3h8v3l2 3v12H6V9l2-3z"/><path d="M6 12h12"/>',
+  'Kød og fisk':      '<path d="M3 12c3-4 8-5 12-2l4-3v10l-4-3c-4 3-9 2-12-2z"/><circle cx="8" cy="11" r="1" fill="currentColor"/>',
+  'Æg':               '<path d="M12 3c4 0 7 7 7 11a7 7 0 0 1-14 0c0-4 3-11 7-11z"/>',
+  'Bageri':           '<path d="M4 12a8 5 0 0 1 16 0v7H4z"/><path d="M9 9.5v3M13 8.5v3M17 9.5v3"/>',
+  'Mel og korn':      '<path d="M12 21V7"/><path d="M12 7c-2-1-3-2.5-3-4.5 2 1 3 2.5 3 4.5zm0 0c2-1 3-2.5 3-4.5-2 1-3 2.5-3 4.5zm0 6c-2-1-4-2-4-4.5 2 1 4 2 4 4.5zm0 0c2-1 4-2 4-4.5-2 1-4 2-4 4.5zm0 6c-2-1-4-2-4-4.5 2 1 4 2 4 4.5zm0 0c2-1 4-2 4-4.5-2 1-4 2-4 4.5z"/>',
+  'Honning og syltet':'<path d="M7 4h10v3H7z"/><path d="M6 7h12v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z"/><path d="M9 13h6"/>',
+  'Andet':            '<path d="M3 10h18l-2 10H5z"/><path d="M8 10l3-6M16 10l-3-6"/>',
+  'Køkken':           '<path d="M4 10h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M2 10h20M9 6.5c0-1 1-2 0-3.5M15 6.5c0-1 1-2 0-3.5"/>',
+};
+const SIGNUP_CATS = ['Grønt','Mejeri','Kød og fisk','Æg','Bageri','Mel og korn','Honning og syltet','Andet'];
+const catOf = p => !p ? 'Andet' : (p.id===KITCHEN_ID ? 'Køkken' : (CATDEF[p.category] ? p.category : 'Andet'));
+const catsOf = p => { if(!p) return ['Andet']; if(p.id===KITCHEN_ID) return ['Køkken'];
+  const list=(Array.isArray(p.categories)?p.categories:[]).filter(c=>CATDEF[c]&&c!=='Køkken');
+  const prim=catOf(p); return list.length?[prim,...list.filter(c=>c!==prim)].filter((c,i,a)=>a.indexOf(c)===i&&(c!=='Andet'||list.includes('Andet'))):[prim]; };
+const catsTxt = p => catsOf(p).join(' · ');
+const catSvg = (cat,size=20,color='currentColor') => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${CATDEF[cat]||CATDEF['Andet']}</svg>`;
+
+/* Nål med kategori-ikon. Ringens farve viser, hvor kort datoen er. */
+const catPin=(cat,ring,dim,thin,more)=>L.divIcon({className:'pinicon'+(dim?' dim':''), iconSize:[40,56], iconAnchor:[20,54], tooltipAnchor:[0,-46],
+  html:`<svg viewBox="0 0 40 56" width="40" height="56" aria-hidden="true"><line x1="20" y1="36" x2="20" y2="53" stroke="#2A241D" stroke-width="4" stroke-linecap="round"></line><circle cx="20" cy="19" r="16" fill="#FBF7EC" stroke="${ring}" stroke-width="${thin?2.5:5}"></circle><svg x="9" y="8" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A241D" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${CATDEF[cat]||CATDEF['Andet']}</svg>${more?`<circle cx="33" cy="8" r="7.5" fill="#2A241D" stroke="#FBF7EC" stroke-width="1.5"></circle><text x="33" y="11" text-anchor="middle" font-size="9" font-weight="700" fill="#FBF7EC" font-family="system-ui,sans-serif">+${more}</text>`:''}</svg>`});
+
+/* ---------- CVR-opslag (demo-register) ----------
+   I den rigtige app slås CVR-nummeret op i CVR-registret via en server
+   (fx Erhvervsstyrelsens system-til-system-adgang eller en CVR-API), så API-nøglen ikke ligger i browseren. */
+const DEMO_CVR = {
+  '41526378': {name:'Gudumlund Frilandsæg ApS', address:'Gudumlundvej 4', zip:'9280', town:'Storvorde', branche:'01.47.00', brancheTxt:'Avl af fjerkræ', bibranche:['01.11.00'], bibrancheTxt:['Dyrkning af korn'], phoneEnd:'4712', lat:56.951, lng:10.112},
+  '39871245': {name:'Hals Røgeri I/S', address:'Havnegade 2', zip:'9370', town:'Hals', branche:'10.20.00', brancheTxt:'Forarbejdning og konservering af fisk', phoneEnd:'8830', lat:56.9985, lng:10.3105},
+  '42013587': {name:'Mosegårdens Biavl', address:'Mosevej 17', zip:'9280', town:'Storvorde', branche:'01.49.20', brancheTxt:'Biavl', phoneEnd:'2091', lat:56.905, lng:10.168},
+  '37650918': {name:'Klarup Surdejsbageri ApS', address:'Klarup Hovedgade 9', zip:'9270', town:'Klarup', branche:'10.71.10', brancheTxt:'Fremstilling af brød og kager', bibranche:['10.61.00'], bibrancheTxt:['Fremstilling af mel og gryn'], phoneEnd:'5564', lat:57.0115, lng:10.0565},
+  '40298816': {name:'Fjordmarkens Grønt', address:'Fjordmarken 3', zip:'9280', town:'Storvorde', branche:'01.13.00', brancheTxt:'Dyrkning af grøntsager, meloner, rod- og knoldfrugter', phoneEnd:null, lat:57.012, lng:10.142},
+};
+function catFromBranche(code){
+  const c=String(code||'');
+  if(/^01\.47/.test(c)) return 'Æg';
+  if(/^01\.49\.2|^10\.39|^10\.89/.test(c)) return 'Honning og syltet';
+  if(/^01\.41|^10\.5/.test(c)) return 'Mejeri';
+  if(/^10\.7/.test(c)) return 'Bageri';
+  if(/^01\.11|^10\.6/.test(c)) return 'Mel og korn';
+  if(/^01\.1|^01\.2/.test(c)) return 'Grønt';
+  if(/^03|^10\.1|^10\.2|^01\.4/.test(c)) return 'Kød og fisk';
+  return 'Andet';
+}
+const suNew = () => ({step:1, cvr:'', co:null, notFound:false, manual:false, name:'', address:'', town:'', phone:'', codeSent:null, code:'', verified:false, cvrMatch:null, cat:null, cats:[], catSuggested:[], story:''});
+const digits = s => String(s||'').replace(/\D/g,'');
+const SU_STEPS = ['Virksomhed','Telefon','Kategori','Afhentning','Aftale'];
+
+function suCollect(){
+  const su=S.su, g=id=>document.getElementById(id);
+  if(g('s-cvr')) su.cvr=digits(g('s-cvr').value).slice(0,8);
+  if(g('s-name')) su.name=g('s-name').value.trim();
+  if(g('s-addr')) su.address=g('s-addr').value.trim();
+  if(g('s-town')) su.town=g('s-town').value.trim();
+  if(g('s-phone')) su.phone=g('s-phone').value.trim();
+  if(g('s-code')) su.code=digits(g('s-code').value);
+  if(g('s-story')) su.story=g('s-story').value.trim();
+  if(g('s-accept')) su.accept=g('s-accept').checked;
+}
+function suErr(msg){ S.su.err=msg; render(); }
+
+function vSignup(){
+  const su=S.su||(S.su=suNew());
+  const bar=`<div class="steps" aria-label="Trin ${su.step} af 5">${SU_STEPS.map((t,i)=>`<span class="${i+1<su.step?'done':i+1===su.step?'now':''}"><i></i>${t}</span>`).join('')}</div>`;
+  const err=su.err?`<p class="banner err" role="alert">${esc(su.err)}</p>`:'';
+  const nav=(next,label)=>`<div class="row" style="gap:10px">${su.step>1?'<button class="btn ghost" data-suback>Tilbage</button>':''}<button class="btn" style="flex:1" ${next}>${label}</button></div>`;
+  let body='';
+  if(su.step===1){
+    const co=su.co;
+    body=`<h2>Find jeres virksomhed</h2><p class="muted">Skriv jeres CVR-nummer. Så henter vi navn, adresse og branche fra CVR-registret.</p>
+      <div class="row" style="gap:8px;align-items:flex-end"><label class="f" style="flex:1">CVR-nummer<input class="inp num" id="s-cvr" inputmode="numeric" maxlength="8" placeholder="8 cifre" value="${esc(su.cvr)}" autocomplete="off"></label><button class="btn" data-sufind style="height:48px">Find</button></div>
+      ${co?`<div class="cofound"><div class="row" style="gap:12px;align-items:flex-start"><span class="cic big">${catSvg(catFromBranche(co.branche),26)}</span><div class="stack" style="gap:3px"><b style="font-size:17px">${esc(co.name)}</b><span class="muted">${esc(co.address)}, ${esc(co.zip)} ${esc(co.town)}</span><span class="muted" style="font-size:13px">Branche ${esc(co.branche)} · ${esc(co.brancheTxt)}</span><span class="muted" style="font-size:13px">${co.phoneEnd?`Telefon i CVR: •• •• ${co.phoneEnd.slice(0,2)} ${co.phoneEnd.slice(2)}`:'Ingen telefon i CVR (reklamebeskyttet)'}</span></div></div></div>
+        ${nav('data-sunext','Det er os – videre')}`
+      : su.notFound||su.manual?`${su.notFound?`<p class="banner">Vi fandt ikke CVR ${esc(su.cvr)}. Tjek nummeret, eller udfyld selv.</p>`:''}
+        <label class="f">Virksomhedens navn<input class="inp" id="s-name" value="${esc(su.name)}" placeholder="Fx Storvorde Æg"></label>
+        <div class="grid2"><label class="f">Adresse<input class="inp" id="s-addr" value="${esc(su.address)}" placeholder="Vej og nummer"></label><label class="f">By<input class="inp" id="s-town" value="${esc(su.town)}" placeholder="Fx Storvorde"></label></div>
+        ${nav('data-sunext','Videre')}`
+      : `<button class="linkbtn" data-sumanual>Vi har ikke et CVR-nummer endnu</button>`}
+      <p class="demo-note">Demo: prøv ${Object.keys(DEMO_CVR).slice(0,4).map(k=>`<button class="linkbtn" data-sutry="${k}">${k}</button>`).join(', ')} eller <button class="linkbtn" data-sutry="40298816">40298816</button> (uden telefon). I den rigtige app slår vi op i hele CVR-registret.</p>`;
+  }
+  if(su.step===2){
+    body=`<h2>Bekræft jeres arbejdstelefon</h2><p class="muted">Vi sender en kode, så vi ved, at telefonen er jeres. Nummeret bruges, når en kunde reserverer, og når vi ringer om ansøgningen.</p>
+      ${su.co&&su.co.phoneEnd?`<p class="banner">I CVR-registret står et nummer, der ender på ${su.co.phoneEnd.slice(0,2)} ${su.co.phoneEnd.slice(2)}. Brug gerne det.</p>`:''}
+      ${su.verified?`<div class="cofound row" style="gap:10px"><span class="okdot">✓</span><span><b>${esc(su.phone)}</b> er bekræftet${su.cvrMatch?' og matcher CVR-registret':''}.</span></div>${nav('data-sunext','Videre')}`
+      :`<div class="row" style="gap:8px;align-items:flex-end"><label class="f" style="flex:1">Telefon<input class="inp num" id="s-phone" type="tel" inputmode="tel" placeholder="12 34 56 78" value="${esc(su.phone)}" autocomplete="tel"></label><button class="btn ${su.codeSent?'ghost':''}" data-susend style="height:48px">${su.codeSent?'Send igen':'Send kode'}</button></div>
+        ${su.codeSent?`<p class="demo-note">Demo-SMS til ${esc(su.phone)}: din kode er <b class="num">${su.codeSent}</b></p>
+        <div class="row" style="gap:8px;align-items:flex-end"><label class="f" style="flex:1">Kode fra SMS<input class="inp num" id="s-code" inputmode="numeric" maxlength="4" placeholder="4 cifre" autocomplete="one-time-code"></label><button class="btn" data-suverify style="height:48px">Bekræft</button></div>`:''}
+        ${su.step>1?'<button class="btn ghost" data-suback>Tilbage</button>':''}`}`;
+  }
+  if(su.step===3){
+    const sug=su.catSuggested||[];
+    body=`<h2>Hvad laver I?</h2><p class="muted">Vælg alt det, I laver. Dyrker I korn, bager og har høns, så vælg alle tre.${sug.length?` Vi har foreslået <b>${sug.map(esc).join('</b> og <b>')}</b> ud fra jeres ${sug.length>1?'branchekoder':'branchekode'} i CVR.`:''}</p>
+      <div class="catgrid" role="group" aria-label="Kategorier, vælg en eller flere">${SIGNUP_CATS.map(c=>`<button class="catbtn" data-sucat="${esc(c)}" aria-pressed="${su.cats.includes(c)}">${su.cats.includes(c)?'<span class="catchk" aria-hidden="true">✓</span>':''}${catSvg(c,28)}<span>${esc(c)}</span></button>`).join('')}</div>
+      ${su.cats.length>1?`<div class="stack" style="gap:6px"><span class="lbl">Ikon på kortet</span><span class="muted" style="font-size:13px">Kortet viser ét ikon ad gangen. Vælg det, I er mest kendt for. Kunder, der filtrerer på en af de andre, finder jer stadig.</span><div class="chips">${su.cats.map(c=>`<button class="chip ic" data-suprim="${esc(c)}" aria-pressed="${su.cat===c}">${catSvg(c,18)}${esc(c)}</button>`).join('')}</div></div>`:''}
+      <label class="f">Jeres historie, kort<textarea class="inp" id="s-story" placeholder="Hvem er I, og hvordan laver I jeres varer?">${esc(su.story)}</textarea></label>
+      ${nav('data-sunext','Videre')}`;
+  }
+  if(su.step===4){
+    body=`<h2>Hvor henter kunderne?</h2><p class="muted">${su.co?'Vi har sat nålen ved adressen fra CVR. Træk den, hvis kunderne skal hente et andet sted.':'Tryk på kortet, hvor kunderne henter.'}</p>
+      <label class="f">Afhentningsadresse<input class="inp" id="s-addr" value="${esc(su.address)}" placeholder="Vej og nummer"></label>
+      ${window.L?`<div class="mapwrap" data-mapslot="pick"></div>`:mapSvg({pins:[],edit:true,pinXY:S.pin})}<span class="muted" id="pin-txt" style="font-size:13px">${esc(pinTxt())}</span>
+      ${nav('data-sunext','Videre')}`;
+  }
+  if(su.step===5){
+    body=`<h2>Producentaftalen</h2>
+      <div class="cofound stack" style="gap:8px">
+        <div class="row" style="gap:12px"><span class="cic big">${catSvg(su.cat,26)}</span><div class="stack" style="gap:2px"><b style="font-size:17px">${esc(su.name)}</b><span class="muted" style="font-size:13px">${su.cats.map(esc).join(' · ')} · ${esc(su.address)}${su.town?', '+esc(su.town):''}</span></div></div>
+        <span class="muted" style="font-size:13px">${su.cvr?'CVR '+esc(su.cvr)+' · ':''}Telefon ${esc(su.phone)} ✓</span>
+      </div>
+      <div class="stack" style="gap:8px"><div class="split"><span></span><span></span></div><div class="between muted" style="font-size:13px"><span>Kunden betaler 100 kr.</span><span>Isakram 10 kr. · I får 90 kr.</span></div></div>
+      <p class="muted" style="font-size:14px">Intet oprettelsesgebyr og intet abonnement. Isakram godkender alle producenter, før de kommer på kortet.</p>
+      <label class="row" style="font-size:14px"><input type="checkbox" id="s-accept" ${su.accept?'checked':''} style="width:22px;height:22px;accent-color:var(--ink)"> Jeg accepterer producentaftalen og 10 % af salgsprisen.</label>
+      ${nav('id="s-send"','Send ansøgning')}`;
+  }
+  return `<section class="card stack"><span class="eb">Bliv producent · trin ${su.step} af 5</span>${bar}${err}${body}</section>`;
+}
+
+function suFind(cvr){
+  const su=S.su; su.err=null;
+  if(cvr) su.cvr=cvr; else suCollect();
+  if(!/^\d{8}$/.test(su.cvr)){ suErr('CVR-nummeret skal være 8 cifre.'); return; }
+  const co=DEMO_CVR[su.cvr];
+  su.co=co||null; su.notFound=!co; su.manual=false;
+  if(co){ su.name=co.name; su.address=co.address; su.town=co.town; su.catSuggested=[co.branche,...(co.bibranche||[])].map(catFromBranche).filter((c,i,a)=>a.indexOf(c)===i); if(!su.cats.length){ su.cats=su.catSuggested.slice(); su.cat=su.cats[0]||null; } }
+  render();
+}
+function suNext(){
+  const su=S.su; suCollect(); su.err=null;
+  if(su.step===1){
+    if(!su.co){ if(!su.name) return suErr('Skriv virksomhedens navn.'); if(!su.address) return suErr('Skriv adressen.'); }
+    su.step=2;
+  } else if(su.step===2){
+    if(!su.verified) return suErr('Bekræft telefonnummeret med koden.');
+    su.step=3;
+  } else if(su.step===3){
+    if(!su.cats.length) return suErr('Vælg mindst én kategori.'); if(!su.cats.includes(su.cat)) su.cat=su.cats[0];
+    su.step=4;
+    if(!S.pin && su.co) S.pin={lat:su.co.lat,lng:su.co.lng};
+  } else if(su.step===4){
+    if(!S.pin) return suErr('Sæt en nål på kortet, hvor kunderne henter.');
+    su.step=5;
+  }
+  render();
+}
+function suSend(){
+  const su=S.su; suCollect(); su.err=null;
+  const n=digits(su.phone);
+  if(n.length!==8) return suErr('Skriv et dansk telefonnummer med 8 cifre.');
+  su.codeSent=String(1000+Math.floor(Math.random()*9000));
+  su.cvrMatch = su.co&&su.co.phoneEnd ? n.slice(-4)===su.co.phoneEnd : null;
+  render(); setTimeout(()=>document.getElementById('s-code')?.focus(),0);
+}
+function suVerify(){
+  const su=S.su; suCollect(); su.err=null;
+  if(su.code!==su.codeSent) return suErr('Koden passer ikke. Tjek SMS’en, eller send en ny kode.');
+  su.verified=true; render();
+}
+async function signup(){
+  const su=S.su; suCollect(); su.err=null;
+  if(!su.accept) return suErr('Sæt flueben ved producentaftalen.');
+  if(!S.me) return suErr('Log ind for at sende ansøgningen.');
+  try{
+    await db.collection('producers').add({name:su.name, category:su.cat, categories:su.cats.slice(), cvr:su.cvr||'', cvrFound:!!su.co, branche:su.co?su.co.branche:'', brancheTxt:su.co?su.co.brancheTxt:'',
+      phone:su.phone, phoneVerified:true, phoneMatchesCvr:su.cvrMatch, town:su.town, story:su.story, address:su.address,
+      lat:S.pin.lat, lng:S.pin.lng, status:'pending', ownerId:S.me, createdAt:new Date().toISOString()});
+    S.acting=null; S.pin=null; S.su=suNew(); maps.pick&&maps.pick.clear(); toast('Ansøgning sendt');
+  }catch(e){ suErr('Ansøgningen kunne ikke gemmes. Du skal have adgang som Contributor eller højere.'); }
+}
+
+/* ---------- kunde ---------- */
+function vKunde(){
+  const ls = live(), ps = shelf();
+  const ids = [...new Set([...ls.map(l=>l.producerId), ...ps.map(p=>p.producerId)])];
+  let groups = ids.map(pid=>{ const p=prodById(pid); const items=ls.filter(l=>l.producerId===pid); const prods=ps.filter(x=>x.producerId===pid);
+    return {p, items, prods, d:distTo(p), min: items.length?Math.min(...items.map(i=>daysLeft(i.expires))):99}; });
+  if(S.onlyLast) groups = groups.filter(g=>g.min<=0);
+  const catsHere=[...new Set(groups.flatMap(g=>catsOf(g.p)))].sort((a,b)=>SIGNUP_CATS.concat('Køkken').indexOf(a)-SIGNUP_CATS.concat('Køkken').indexOf(b));
+  if(S.fcat && !catsHere.includes(S.fcat)) S.fcat='';
+  if(S.fcat) groups = groups.filter(g=>catsOf(g.p).includes(S.fcat));
+  const inside = groups.filter(g=>!S.radius || g.d<=S.radius);
+  const outside = groups.length-inside.length;
+  inside.sort((a,b)=>a.min-b.min || a.d-b.d);
+  S._pins = groups.map(g=>{ const u=g.min<99?urgency(g.min):null; const q=pos(g.p); const cs=catsOf(g.p); return {id:g.p.id,name:g.p.name,cat:S.fcat&&cs.includes(S.fcat)?S.fcat:cs[0],cats:cs.join(', '),more:cs.length-1,lat:q.lat,lng:q.lng,ring:u?({last:'#B5462E',two:'#C5853B'}[u.cls]||'#2A241D'):'#2A241D',thin:!u,dim:S.radius&&g.d>S.radius,tag:u?u.txt:'Fast sortiment'}; });
+  const mine = S.reservations.filter(r=>r.userId && r.userId===S.me && r.status==='reserved');
+  const posOpts = [...(S.myPos.name==='Valgt punkt'?[['Valgt punkt']]:[]), ...TOWNS].map(([n])=>`<option value="${esc(n)}" ${S.myPos.name===n?'selected':''}>${esc(n)}</option>`).join('');
+  return `
+  ${window.L?`<div class="mapwrap" data-mapslot="kunde"></div>`:mapSvg({pins:[]})}
+  <div class="mapbar">
+    <label class="sr" for="pos">Din position</label>
+    <select class="inp" id="pos" aria-label="Din position">${posOpts}</select>
+    ${[5,10,20,0].map(r=>`<button class="chip" data-radius="${r}" aria-pressed="${S.radius===r}">${r?r+' km':'Alle'}</button>`).join('')}
+  </div>
+  ${catsHere.length>1?`<div class="catfilter" role="group" aria-label="Vis producenter efter kategori"><button class="chip" data-fcat="" aria-pressed="${!S.fcat}">Alle</button>${catsHere.map(c=>`<button class="chip ic" data-fcat="${esc(c)}" aria-pressed="${S.fcat===c}">${catSvg(c,18)}${esc(c)}</button>`).join('')}</div>`:''}
+  <div class="between" style="flex-wrap:wrap;gap:8px"><div class="legend"><span><i class="ring" style="border-color:#B5462E"></i>Sidste dag</span><span><i class="ring" style="border-color:#C5853B"></i>2 dage</span><span><i class="ring" style="border-color:#2A241D"></i>3+ dage</span><span><i class="ring thin"></i>Fast sortiment</span></div>
+    <button class="chip" id="f-last" aria-pressed="${S.onlyLast}">Kun sidste dag</button></div>
+  <p class="muted" style="font-size:13px;margin-top:-6px">Træk den blå prik, eller vælg en by, for at flytte din position.</p>
+  <section class="card stack">
+    <div class="between"><h2>Producenter nær dig</h2><span class="muted num">${inside.length}</span></div>
+    ${inside.length ? `<div class="list">${inside.map(g=>{const u=g.min<99?urgency(g.min):null; const names=[...g.items.map(i=>i.name),...g.prods.map(p=>p.name)];return `
+      <button class="li" data-open="${esc(g.p.id)}"><span class="cic" style="border-color:${u?({last:'#B5462E',two:'#C5853B'}[u.cls]||'#2A241D'):'var(--line)'}" title="${esc(catsTxt(g.p))}">${catSvg(S.fcat&&catsOf(g.p).includes(S.fcat)?S.fcat:catOf(g.p),20)}</span>
+        <span class="grow"><b>${esc(g.p.name)}</b><span class="muted">${esc(names.slice(0,2).join(', '))}${names.length>2?' m.fl.':''}</span></span>
+        <span class="stack" style="gap:4px;align-items:flex-end">${u?`<span class="tag ${u.cls}">${u.txt}</span>`:`<span class="tag three">Sortiment</span>`}<span class="muted num" style="font-size:13px">${esc(g.p.town||'')} · ${kmTxt(g.d)}</span></span>
+      </button>`}).join('')}</div>` : `<p class="empty">${!S.ready?'Henter varer …':groups.length?`Ingen producenter inden for ${S.radius} km. Vælg en større radius.`:'Ingen varer lige nu. Når en producent lægger noget ud, dukker det op her med det samme.'}</p>`}
+    ${outside&&inside.length?`<button class="btn ghost small" data-radius="0">${outside} ${outside===1?'producent':'producenter'} længere væk</button>`:''}
+  </section>
+  ${mine.length?`<section class="card stack"><h2>Mine reservationer</h2><div class="list">${mine.map(r=>`
+    <div class="li"><span class="grow"><b>${esc(r.qty)} × ${esc(r.productName)}</b><span class="muted">${esc(r.producerName)} · ${kr(r.total)}</span></span><b class="num" style="font-family:var(--display);font-size:20px;letter-spacing:.1em">${esc(r.code)}</b></div>`).join('')}</div></section>`:''}`;
+}
+
+/* ---------- producent ---------- */
+function actSel(label){
+  const others = S.producers.filter(x=>x.status==='approved');
+  return `<section class="card"><label class="f">${label||'Demo: log ind som en eksisterende producent'}
+    <select class="inp" id="act"><option value="">Min egen tilmelding</option>${others.map(o=>`<option value="${esc(o.id)}" ${S.acting===o.id?'selected':''}>${esc(o.name)}</option>`).join('')}</select></label></section>`;
+}
+const hasShop = () => myProducer()?.status==='approved';
+/* Fanen "Bliv producent": tilmelding og status på ansøgningen */
+function vProducent(){
+  const p = myProducer();
+  if(!p) return `${vSignup()}${actSel()}`;
+  if(p.status==='pending'){
+    const tel=String(p.phone||'').replace(/\D/g,'').replace(/(\d{2})(?=\d)/g,'$1 ');
+    return `
+    <section class="card stack" style="gap:16px">
+      <span class="eb">${esc(p.name)}</span>
+      <h2>Tak for jeres tilmelding</h2>
+      <div class="pbar" role="img" aria-label="Trin 2 af 3: godkendelse"><span class="on"></span><span class="half"></span><span></span></div>
+      <div class="plbl" aria-hidden="true"><span class="on">Modtaget</span><span class="cur">Godkendelse</span><span>Shop åbner</span></div>
+      <div class="pnext"><span class="pic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></span>
+        <div class="stack" style="gap:3px"><span class="eb" style="color:var(--amber-ink)">Næste skridt</span><b style="font-size:16px">Vi ringer eller godkender jer direkte</b>
+        <span class="muted" style="font-size:14px">Inden for 2 hverdage. Har vi spørgsmål, ringer vi${tel?` på <span style="white-space:nowrap">${esc(tel)}</span>`:''}, og opkaldet tager kun 2&nbsp;minutter. Er alt på plads, godkender vi jer med det samme, og så åbner Din shop.</span></div></div>
+      <p class="muted" style="font-size:13px;margin:0">I denne demo godkender du selv under fanen Isakram.</p>
+    </section>${actSel()}`;
+  }
+  if(p.status==='rejected') return `<section class="card stack"><h2>Ansøgningen er ikke godkendt</h2><p class="muted">Isakram har sagt nej til ${esc(p.name)} denne gang.</p></section>${actSel()}`;
+  return `<section class="card stack">
+      <div class="row" style="gap:12px"><span class="cic big">${catSvg(catOf(p),26)}</span><div class="stack" style="gap:2px"><span class="eb">Godkendt producent</span><h2>${esc(p.name)}</h2></div></div>
+      <p class="muted">I er på kortet. Lægge varer ud, se ordrer og følge salget gør I i fanen Din shop.</p>
+      <button class="btn block" data-role="shop">Gå til Din shop</button>
+    </section>${actSel()}`;
+}
+/* Fanen "Din shop": kun for godkendte producenter */
+function vShop(){
+  const p = myProducer();
+  if(!p || p.status!=='approved') return vProducent();
+  const tabs = [['overblik','Overblik'],['produkter','Produkter'],['kortdato','Tilbud']];
+  const body = S.ptab==='produkter' ? vProducts(p) : S.ptab==='kortdato' ? vKortdato(p) : vOverblik(p);
+  return `
+  <div class="between"><div class="row" style="gap:12px"><span class="cic big">${catSvg(catOf(p),26)}</span><div class="stack" style="gap:2px"><span class="eb">Din shop · ${esc(catsTxt(p))}</span><h2>${esc(p.name)}</h2></div></div><span class="tag ok">Åben</span></div>
+  <div class="seg sub" role="tablist" aria-label="Din shop">${tabs.map(([k,t])=>`<button role="tab" data-ptab="${k}" aria-pressed="${S.ptab===k}">${t}</button>`).join('')}</div>
+  ${body}
+  ${actSel('Demo: skift producent')}`;
+}
+function vOverblik(p){
+  const res = S.reservations.filter(r=>r.producerId===p.id);
+  const open = res.filter(r=>r.status==='reserved').sort((a,b)=>a.createdAt<b.createdAt?1:-1);
+  const picked = res.filter(r=>r.status==='picked');
+  const sold = picked.reduce((s,r)=>s+r.total,0);
+  const saved = picked.filter(r=>r.kind!=='fast').reduce((s,r)=>s+r.qty,0);
+  const prods = S.products.filter(x=>x.producerId===p.id);
+  const waiting = prods.filter(x=>x.status==='pending').length;
+  const low = prods.filter(x=>x.status==='approved' && x.stock<=2);
+  return `
+  <div class="stats"><div class="stat dark"><span>Solgt</span><b class="num">${kr(sold)}</b></div><div class="stat"><span>Til jer, 90 %</span><b class="num">${kr(sold*(1-FEE))}</b></div><div class="stat"><span>Reddet</span><b class="num">${saved} stk.</b></div></div>
+  ${waiting?`<p class="banner">${waiting} ${waiting===1?'produkt venter':'produkter venter'} på Isakrams godkendelse.</p>`:''}
+  ${low.length?`<p class="banner" style="background:var(--card);border:1px solid var(--line)">Næsten udsolgt: ${low.map(x=>esc(x.name)+' ('+x.stock+')').join(', ')}.</p>`:''}
+  <section class="card stack">
+    <div class="between"><h2>Til afhentning</h2><span class="muted num">${open.length}</span></div>
+    ${open.length?`<div class="list">${open.map(r=>`<div class="li"><span class="grow"><b>${esc(r.qty)} × ${esc(r.productName)}</b><span class="muted">Kode <b class="num" style="color:var(--ink);letter-spacing:.08em">${esc(r.code)}</b> · ${kr(r.total)} · ${r.kind==='fast'?'Sortiment':'Tilbud'}</span></span><button class="btn small" data-pick="${esc(r.id)}">Udleveret</button></div>`).join('')}</div>`:`<p class="empty">Ingen reservationer endnu. De dukker op her, så snart en kunde reserverer.</p>`}
+  </section>
+  ${p.id!==KITCHEN_ID?`<section class="card stack"><div class="between"><h3>Det laver I</h3><span class="muted" style="font-size:13px">Tryk for at til- eller fravælge</span></div>
+    <div class="chips">${SIGNUP_CATS.map(c=>`<button class="chip ic" data-mycat="${esc(c)}" aria-pressed="${catsOf(p).includes(c)}">${catSvg(c,18)}${esc(c)}</button>`).join('')}</div>
+    ${catsOf(p).length>1?`<div class="stack" style="gap:6px"><span class="lbl">Ikon på kortet</span><div class="chips">${catsOf(p).map(c=>`<button class="chip ic" data-myprim="${esc(c)}" aria-pressed="${catOf(p)===c}">${catSvg(c,18)}${esc(c)}</button>`).join('')}</div></div>`:''}
+  </section>`:''}
+  ${picked.length?`<section class="card stack"><h3>Seneste salg</h3><div class="list">${picked.sort((a,b)=>(a.pickedAt||'')<(b.pickedAt||'')?1:-1).slice(0,5).map(r=>`<div class="li"><span class="grow"><b>${esc(r.qty)} × ${esc(r.productName)}</b><span class="muted num">Gebyr ${kr(r.fee)}</span></span><b class="num">${kr(r.total-r.fee)}</b></div>`).join('')}</div></section>`:''}`;
+}
+function statusTag(x){
+  if(x.status==='pending') return '<span class="tag wait">Venter</span>';
+  if(x.status==='rejected') return '<span class="tag three">Afvist</span>';
+  if(x.paused) return '<span class="tag three">På pause</span>';
+  if(x.stock<=0) return '<span class="tag last">Udsolgt</span>';
+  return '<span class="tag ok">På hylden</span>';
+}
+function vProducts(p){
+  const prods = S.products.filter(x=>x.producerId===p.id).sort((a,b)=>(a.createdAt||'')<(b.createdAt||'')?1:-1);
+  const form = S.pform ? `<section class="card stack" id="pform">
+      <div class="between"><h2>Nyt produkt</h2><button class="close" data-pcancel aria-label="Luk">×</button></div>
+      ${S.photo?`<div class="row" style="align-items:flex-start;gap:12px">
+        <label class="photo" for="p-photo" title="Skift billede"><img src="${S.photo}" alt="Billede af varen"></label>
+        <div class="stack" style="gap:6px;flex:1 1 0;min-width:0">${recStatus()}</div>
+      </div>`:`<label class="snap" for="p-photo"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg><span><b>Tag et billede af varen</b><br><span class="muted">${recOn()?'Kameraet åbner. Vi genkender varen og udfylder navn, enhed, hylde og beskrivelse.':'Kameraet åbner. Billedet vises i jeres shop.'}</span></span></label>
+      <label class="linkbtn" for="p-gallery" style="align-self:flex-start;font-size:14px">Eller vælg et billede, I allerede har</label>`}
+      <input type="file" id="p-photo" accept="image/*" capture="environment" hidden>
+      <input type="file" id="p-gallery" accept="image/*" hidden>
+      <label class="f">Navn<input class="inp" id="p-name" placeholder="Fx Gule løg"></label>
+      <div class="stack" style="gap:6px"><span class="lbl">Hylde</span><div class="chips">${SHELVES.map(s=>`<button class="chip" data-shelf="${esc(s)}" aria-pressed="${S.shelf===s}">${esc(s)}</button>`).join('')}</div></div>
+      <div class="grid3"><label class="f">Pris (kr.)<input class="inp num" id="p-price" inputmode="decimal" placeholder="25"></label><label class="f">Enhed<input class="inp" id="p-unit" placeholder="1 kg"></label><label class="f">På lager<input class="inp num" id="p-stock" inputmode="numeric" placeholder="20"></label></div>
+      <p class="banner between" id="p-net-row"><span>I får pr. salg, efter 10 %</span><b class="num" id="p-net">–</b></p>
+      <label class="f">Beskrivelse<textarea class="inp" id="p-desc" placeholder="Hvordan er den dyrket eller lavet?"></textarea></label>
+      <label class="row" style="font-size:14px;font-weight:600"><input type="checkbox" id="p-box" ${S.inBox?'checked':''} style="width:22px;height:22px;accent-color:var(--ink)"> Tilbyd også i Isakram-kassen</label>
+      <p id="p-err" class="banner" hidden></p>
+      <button class="btn block" id="p-save" ${S.busy?'disabled':''}>Send til godkendelse</button>
+      <p class="muted" style="font-size:13px;text-align:center">Isakram ser hver ny vare igennem, før den kommer på hylden.</p>
+    </section>` : `<button class="btn block" id="p-new">Nyt produkt</button>`;
+  return `${form}
+  <section class="card stack"><div class="between"><h2>Mit sortiment</h2><span class="muted num">${prods.length}</span></div>
+    ${prods.length?`<div class="list">${prods.map(x=>`<div class="li prod">
+      ${thumb(x)}
+      <span class="grow"><span class="between" style="align-items:flex-start"><b>${esc(x.name)}${x.unit?', '+esc(x.unit):''}</b>${statusTag(x)}</span>
+        <span class="muted num">${kr(x.price)} · ${esc(x.shelf||'')}${x.inBox?' · i kassen':''}</span>
+        ${x.status==='approved'?`<span class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">
+          <span class="step mini"><button data-sdec="${esc(x.id)}" aria-label="Færre på lager" ${x.stock<=0?'disabled':''}>−</button><b class="num" style="min-width:28px;text-align:center">${x.stock}</b><button data-sinc="${esc(x.id)}" aria-label="Flere på lager">+</button></span>
+          <button class="btn small ghost" data-pause="${esc(x.id)}">${x.paused?'Sæt på hylden':'Pause'}</button>
+          <button class="btn small ghost" data-tokd="${esc(x.id)}">Lav tilbud</button></span>`:''}
+      </span></div>`).join('')}</div>`:`<p class="empty">I har ingen produkter endnu. Tryk "Nyt produkt" for at lægge det første på hylden.</p>`}
+  </section>`;
+}
+function vKortdato(p){
+  const mineL = S.listings.filter(l=>l.producerId===p.id && l.status==='live').sort((a,b)=>a.expires<b.expires?-1:1);
+  const own = S.products.filter(x=>x.producerId===p.id && x.status==='approved');
+  const fp = S.fromProduct ? productById(S.fromProduct) : null;
+  return `
+  <section class="card stack">
+    <h2>Nyt tilbud</h2><p class="muted" style="font-size:14px;margin-top:-4px">Varer tæt på sidste salgsdato. Rabatten følger datoen.</p>
+    ${own.length?`<label class="f">Fra mit sortiment<select class="inp" id="l-from"><option value="">Ny vare</option>${own.map(o=>`<option value="${esc(o.id)}" ${S.fromProduct===o.id?'selected':''}>${esc(o.name)}</option>`).join('')}</select></label>`:''}
+    <div class="grid2"><label class="f">Vare<input class="inp" id="l-name" placeholder="Fx Nye kartofler" value="${fp?esc(fp.name):''}"></label><label class="f">Enhed<input class="inp" id="l-unit" placeholder="Fx 2 kg" value="${fp?esc(fp.unit||''):''}"></label></div>
+    <div class="grid2"><label class="f">Normalpris (kr.)<input class="inp num" id="l-price" inputmode="decimal" placeholder="40" value="${fp?esc(fp.price):''}"></label><label class="f">Antal<input class="inp num" id="l-qty" inputmode="numeric" placeholder="5"></label></div>
+    <div class="stack" style="gap:6px"><span class="lbl">Sidste salgsdato</span>
+      <div class="grid3">${[['I dag',0],['I morgen',1],['Om 2 dage',2]].map(([t,n])=>`<button class="chip" data-exp="${n}" aria-pressed="${S.exp===n}">${t}</button>`).join('')}</div></div>
+    <p class="banner">Pris i appen: −${Math.round(discount(S.exp)*100)} % nu, −50 % sidste dag. Prisen falder af sig selv.</p>
+    ${fp?`<p class="muted" style="font-size:13px">Antallet trækkes fra ${esc(fp.name)} på lageret (${fp.stock} nu).</p>`:''}
+    <label class="row" style="font-size:14px;font-weight:600"><input type="checkbox" id="l-kitchen" ${S.kitchen?'checked':''} style="width:22px;height:22px;accent-color:var(--ink)"> Send resten til Isakram-køkkenet</label>
+    <button class="btn block" id="l-add">Læg tilbuddet ud</button>
+  </section>
+  <section class="card stack"><h2>Aktive tilbud</h2>
+    ${mineL.length?`<div class="list">${mineL.map(l=>{const dl=daysLeft(l.expires);const u=dl<0?{cls:'three',txt:'Udløbet'}:urgency(dl);return `<div class="li"><span class="grow"><b>${esc(l.name)}${l.unit?', '+esc(l.unit):''}</b><span class="muted num">${l.qty} tilbage · normal ${kr(l.normalPrice)}${dl>=0?' · nu '+kr(unitPrice(l)):''}</span></span><span class="tag ${u.cls}">${u.txt}</span><button class="close" aria-label="Fjern ${esc(l.name)}" data-del="${esc(l.id)}">×</button></div>`}).join('')}</div>`:`<p class="empty">Ingen tilbud ude lige nu.</p>`}
+  </section>`;
+}
+
+/* ---------- isakram ---------- */
+const KITCHEN_ID = 'isakram-koekken';
+const addDaysFrom = (iso,n) => { const d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const dayLabel = n => n===0?'I dag':n===1?'I morgen':new Date(addDays(n)+'T12:00:00').toLocaleDateString('da-DK',{weekday:'short',day:'numeric'});
+const bbTag = iso => { const dl=daysLeft(iso); if(dl<0) return '<span class="tag last">Overskredet</span>'; if(dl===0) return '<span class="tag last">Brug i dag</span>'; if(dl===1) return '<span class="tag two">I morgen</span>'; return `<span class="tag three">${dl} dage</span>`; };
+
+function vAdmin(){
+  const tabs=[['overblik','Overblik'],['produkter','Produkter'],['koekken','Køkken']];
+  const body = S.atab==='produkter'?vCatalog():S.atab==='koekken'?vKitchen():vAdminOverblik();
+  return `<div class="seg sub" role="tablist" aria-label="Isakram">${tabs.map(([k,t])=>`<button role="tab" data-atab="${k}" aria-pressed="${S.atab===k}">${t}</button>`).join('')}</div>${body}`;
+}
+
+function vAdminOverblik(){
+  const pend = S.producers.filter(p=>p.status==='pending');
+  const appr = S.producers.filter(p=>p.status==='approved' && p.id!==KITCHEN_ID);
+  const pprods = S.products.filter(x=>x.status==='pending');
+  const picked = S.reservations.filter(r=>r.status==='picked');
+  const open = S.reservations.filter(r=>r.status==='reserved');
+  const gmv = picked.filter(r=>r.producerId!==KITCHEN_ID).reduce((s,r)=>s+r.total,0);
+  return `
+  <div class="stats"><div class="stat dark"><span>Isakram, 10 %</span><b class="num">${kr(gmv*FEE)}</b></div><div class="stat"><span>Solgt i alt</span><b class="num">${kr(gmv)}</b></div><div class="stat"><span>Åbne</span><b class="num">${open.length}</b></div></div>
+  <section class="card stack"><div class="between"><h2>Nye producenter</h2><span class="muted num">${pend.length}</span></div>
+    ${pend.length?`<div class="list">${pend.map(p=>`<div class="li" style="flex-wrap:wrap"><span class="grow"><b>${esc(p.name)}</b><span class="muted">${esc(catsTxt(p))} · ${esc(p.town||'Ukendt by')} · CVR ${esc(p.cvr||'–')}</span><span class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">${p.cvrFound?'<span class="tag ok">Fundet i CVR</span>':(p.cvr?'<span class="tag wait">CVR ikke tjekket</span>':'<span class="tag wait">Uden CVR</span>')}${p.phoneVerified?`<span class="tag ok">Telefon bekræftet${p.phoneMatchesCvr?' · matcher CVR':''}</span>`:''}${p.branche?`<span class="tag three">Branche ${esc(p.branche)}</span>`:''}</span>${p.story?`<span style="font-size:14px">${esc(p.story)}</span>`:''}</span><span class="row"><button class="btn small ghost" data-rej="${esc(p.id)}">Afvis</button><button class="btn small" data-ok="${esc(p.id)}">Godkend</button></span></div>`).join('')}</div>`:`<p class="empty">Ingen ansøgninger lige nu. Prøv at søge under fanen Producent.</p>`}
+  </section>
+  <section class="card stack"><div class="between"><h2>Nye produkter</h2><span class="muted num">${pprods.length}</span></div>
+    ${pprods.length?`<div class="list">${pprods.map(x=>`<div class="li" style="flex-wrap:wrap;align-items:flex-start">${thumb(x)}<span class="grow"><b>${esc(x.name)}${x.unit?', '+esc(x.unit):''}</b><span class="muted num">${esc(x.producerName)} · ${kr(x.price)} · ${esc(x.shelf||'')} · ${x.stock} på lager</span>${x.description?`<span style="font-size:14px">${esc(x.description)}</span>`:''}</span><span class="row" style="margin-left:auto"><button class="btn small ghost" data-prej="${esc(x.id)}">Afvis</button><button class="btn small" data-pok="${esc(x.id)}">Godkend</button></span></div>`).join('')}</div>`:`<p class="empty">Ingen produkter venter. Producenter sender nye varer herind fra fanen Produkter.</p>`}
+  </section>
+  <section class="card stack"><h2>Producenter</h2>
+    ${appr.length?`<div class="list">${appr.map(p=>{const s=S.reservations.filter(r=>r.producerId===p.id&&r.status==='picked').reduce((a,r)=>a+r.total,0);const n=S.products.filter(x=>x.producerId===p.id&&x.status==='approved').length;return `<div class="li"><span class="grow"><b>${esc(p.name)}</b><span class="muted">${esc(p.category)} · ${n} ${n===1?'produkt':'produkter'}</span></span><span class="num" style="text-align:right;font-size:14px">${kr(s)}<br><span class="muted">gebyr ${kr(s*FEE)}</span></span></div>`}).join('')}</div>`:`<p class="empty">Ingen godkendte producenter endnu.</p>`}
+  </section>
+  <section class="card stack"><h3>Demo</h3><p class="muted" style="font-size:14px">Rykker datoerne på demovarer frem, så de igen ligger i dag, i morgen og om 2 dage.</p><button class="btn ghost block" id="d-refresh">Forny demo-datoer</button></section>`;
+}
+
+/* Produktoversigt: alle varer i cirkulation */
+function catalogRows(){
+  const rows=[];
+  S.products.filter(x=>x.status!=='rejected').forEach(x=>rows.push({type:'Sortiment',id:x.id,name:x.name+(x.unit?', '+x.unit:''),producer:x.producerName,producerId:x.producerId,shelf:x.shelf||'',qty:x.stock,price:x.price,status:x.status==='pending'?'Venter':x.paused?'Pause':x.stock<=0?'Udsolgt':'På hylden',stCls:x.status==='pending'?'wait':x.paused?'three':x.stock<=0?'last':'ok',sort:x.name}));
+  S.listings.filter(l=>l.status==='live' && l.qty>0).forEach(l=>{const dl=daysLeft(l.expires); const u=dl<0?{cls:'last',txt:'Udløbet'}:urgency(dl); rows.push({type:'Tilbud',id:l.id,name:l.name+(l.unit?', '+l.unit:''),producer:l.producerName,producerId:l.producerId,shelf:'',qty:l.qty,price:dl>=0?unitPrice(l):l.normalPrice,normal:l.normalPrice,status:u.txt,stCls:u.cls,expires:l.expires,sort:l.name});});
+  return rows;
+}
+function vCatalog(){
+  let rows = catalogRows();
+  const prods = [...new Set(rows.map(r=>r.producerId))].map(id=>({id,name:(prodById(id)||{}).name||rows.find(r=>r.producerId===id).producer}));
+  const q = S.cq.toLowerCase();
+  if(q) rows = rows.filter(r=>(r.name+' '+r.producer+' '+r.shelf).toLowerCase().includes(q));
+  if(S.ctype!=='alle') rows = rows.filter(r=>r.type===S.ctype);
+  if(S.cprod) rows = rows.filter(r=>r.producerId===S.cprod);
+  rows.sort((a,b)=>a.producer.localeCompare(b.producer,'da')||a.type.localeCompare(b.type,'da')||a.sort.localeCompare(b.sort,'da'));
+  const units = rows.reduce((s,r)=>s+r.qty,0), value = rows.reduce((s,r)=>s+r.qty*r.price,0);
+  return `
+  <section class="card stack">
+    <div class="between"><div class="stack" style="gap:2px"><span class="eb">Opslagsværk · kun Isakram</span><h2>Alle varer i cirkulation</h2></div></div>
+    <label class="f">Søg<input class="inp" id="c-q" placeholder="Vare, producent eller hylde" value="${esc(S.cq)}"></label>
+    <div class="row" style="flex-wrap:wrap;gap:8px">${['alle','Sortiment','Tilbud'].map(t=>`<button class="chip" data-ctype="${t}" aria-pressed="${S.ctype===t}">${t==='alle'?'Alle':t}</button>`).join('')}
+      <select class="inp" id="c-prod" style="width:auto;height:40px;flex:1 1 160px"><option value="">Alle producenter</option>${prods.map(p=>`<option value="${esc(p.id)}" ${S.cprod===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div>
+    <p class="muted num" style="font-size:14px">${rows.length} varer · ${units} stk. · værdi ${kr(value)} til nuværende pris</p>
+    <div class="tablewrap"><table class="tbl">
+      <thead><tr><th>Vare</th><th>Producent</th><th>Type</th><th class="r">Antal</th><th class="r">Pris</th><th>Status</th></tr></thead>
+      <tbody>${rows.length?rows.map(r=>`<tr><td><b>${esc(r.name)}</b>${r.shelf?`<br><span class="muted">${esc(r.shelf)}</span>`:''}</td><td>${esc(r.producer)}</td><td>${r.type}</td><td class="r num">${r.qty}</td><td class="r num">${kr(r.price)}${r.normal&&r.normal!==r.price?`<br><s class="muted">${kr(r.normal)}</s>`:''}</td><td><span class="tag ${r.stCls}">${esc(r.status)}</span></td></tr>`).join(''):`<tr><td colspan="6" class="empty">Ingen varer matcher søgningen.</td></tr>`}</tbody>
+    </table></div>
+  </section>`;
+}
+
+/* Køkkenet: prognose, forråd og produktion */
+function incomingFor(n){
+  // varer med kort dato, der udløber dagen før dag n og er sendt til køkkenet
+  const day = addDays(n);
+  return S.listings.filter(l=>l.status==='live' && l.qty>0 && l.toKitchen && (n===0 ? l.expires < day : addDaysFrom(l.expires,1)===day))
+    .map(l=>{ const overdue = n===0; const exp = overdue ? l.qty : Math.round(l.qty*(1-S.sellRate)); return {l, exp, overdue}; })
+    .filter(x=>x.exp>0);
+}
+function pantryFor(n){ const day=addDays(n); return S.pantry.filter(p=>p.qty>0 && (n===0 ? p.bestBefore<=day : p.bestBefore===day)); }
+function vKitchen(){
+  const days=[0,1,2,3,4,5,6].map(n=>({n, inc:incomingFor(n), pan:pantryFor(n), bat:S.batches.filter(b=>b.date===addDays(n) && b.status==='planned')}));
+  const max = Math.max(1,...days.map(d=>d.inc.reduce((s,x)=>s+x.exp,0)+d.pan.length));
+  const d = days[S.kday];
+  const pantry = [...S.pantry].filter(p=>p.qty>0).sort((a,b)=>a.bestBefore<b.bestBefore?-1:1);
+  const batches = [...S.batches].filter(b=>b.status!=='sold').sort((a,b)=>a.date<b.date?-1:1);
+  return `
+  <section class="card stack">
+    <div class="stack" style="gap:2px"><span class="eb">Isakram-køkkenet · Aagade 30</span><h2>Ugen i køkkenet</h2></div>
+    <label class="f">Forventet salg før udløb: <span class="num" id="k-rate-v" style="color:var(--ink)">${Math.round(S.sellRate*100)} %</span>
+      <input type="range" id="k-rate" min="0" max="90" step="10" value="${Math.round(S.sellRate*100)}" style="accent-color:var(--ink)"></label>
+    <div class="days" role="tablist" aria-label="Vælg dag">${days.map(x=>{const a=x.inc.reduce((s,i)=>s+i.exp,0), b=x.pan.length; return `<button class="day" data-kday="${x.n}" aria-pressed="${S.kday===x.n}">
+      <span class="dl">${esc(dayLabel(x.n))}</span>
+      <span class="bars" aria-hidden="true"><i style="height:${Math.round(a/max*48)}px;background:var(--amber)"></i><i style="height:${Math.round(b/max*48)}px;background:var(--sage)"></i></span>
+      <span class="num" style="font-size:12px;line-height:1.3">${a} ind<br>${b} forråd</span></button>`}).join('')}</div>
+    <div class="row muted" style="font-size:12px;gap:14px"><span class="row" style="gap:6px"><i class="sw" style="background:var(--amber)"></i>Forventet fra producenter (stk.)</span><span class="row" style="gap:6px"><i class="sw" style="background:var(--sage)"></i>Eget forråd, der skal bruges (varer)</span></div>
+  </section>
+  <section class="card stack">
+    <h2>${esc(dayLabel(d.n))}</h2>
+    <h3>Ind fra producenter</h3>
+    ${d.inc.length?`<div class="list">${d.inc.map(x=>`<div class="li"><span class="grow"><b>${x.overdue?'':'ca. '}${x.exp} × ${esc(x.l.name)}${x.l.unit?', '+esc(x.l.unit):''}</b><span class="muted">${esc(x.l.producerName)} · ${x.overdue?'udløbet '+esc(x.l.expires)+', klar til afhentning':x.l.qty+' ude nu, udløber '+esc(x.l.expires)}</span></span>${x.overdue?`<button class="btn small" data-kitchen="${esc(x.l.id)}">Modtaget</button>`:''}</div>`).join('')}</div>`:`<p class="empty">Intet forventet ind denne dag.</p>`}
+    <h3>Fra eget forråd</h3>
+    ${d.pan.length?`<div class="list">${d.pan.map(p=>`<div class="li"><span class="grow"><b>${esc(p.qty)} ${esc(p.unit)} ${esc(p.name)}</b><span class="muted">${esc(p.source||'Eget forråd')}</span></span>${bbTag(p.bestBefore)}</div>`).join('')}</div>`:`<p class="empty">Intet i forrådet har sidste dag ${d.n===0?'i dag':'denne dag'}.</p>`}
+    ${d.bat.length?`<h3>Planlagt produktion</h3><div class="list">${d.bat.map(b=>`<div class="li"><span class="grow"><b>${esc(b.yield)} ${esc(b.unit)} ${esc(b.name)}</b><span class="muted">${b.inputs.map(i=>esc(i.qty+' '+i.unit+' '+i.name)).join(', ')}</span></span></div>`).join('')}</div>`:''}
+    <button class="btn ghost block" data-bnew>Planlæg produktion ${d.n===0?'i dag':esc(dayLabel(d.n).toLowerCase())}</button>
+  </section>
+  ${vSuggest(d.n)}
+  ${S.bform?vBatchForm():''}
+  <section class="card stack">
+    <div class="between"><h2>Forråd</h2><button class="btn small" data-pantrynew>${S.pform2?'Luk':'Tilføj'}</button></div>
+    ${S.pform2?`<div class="stack" style="background:var(--bg);border-radius:14px;padding:12px">
+      <div class="grid2"><label class="f">Vare<input class="inp" id="f-name" placeholder="Fx Fløde"></label><label class="f">Bedst før<input class="inp" type="date" id="f-bb" value="${addDays(3)}"></label></div>
+      <div class="grid2"><label class="f">Mængde<input class="inp num" id="f-qty" inputmode="decimal" placeholder="2"></label><label class="f">Enhed<input class="inp" id="f-unit" placeholder="l"></label></div>
+      <button class="btn block" id="f-save">Læg i forråd</button></div>`:''}
+    ${pantry.length?`<div class="list">${pantry.map(p=>`<div class="li"><span class="grow"><b>${esc(p.name)}</b><span class="muted">${esc(p.source||'Eget forråd')}</span></span>
+      <span class="step mini"><button data-fdec="${esc(p.id)}" aria-label="Mindre ${esc(p.name)}">−</button><b class="num" style="min-width:52px;text-align:center">${esc(p.qty)} ${esc(p.unit)}</b><button data-finc="${esc(p.id)}" aria-label="Mere ${esc(p.name)}">+</button></span>${bbTag(p.bestBefore)}</div>`).join('')}</div>`:`<p class="empty">Forrådet er tomt. Tilføj jeres egne råvarer, eller modtag overskydende tilbudsvarer fra producenterne.</p>`}
+  </section>
+  <section class="card stack"><h2>Produktion</h2>
+    ${batches.length?`<div class="list">${batches.map(b=>`<div class="li" style="flex-wrap:wrap"><span class="grow"><b>${esc(b.yield)} ${esc(b.unit)} ${esc(b.name)}</b><span class="muted num">${esc(b.date)} · ${kr(b.price)} pr. ${esc(b.unit)} · ${b.inputs.length} råvarer${b.ref?' · '+esc(b.ref):''}</span></span>
+      ${b.status==='planned'?`<span class="tag wait">Planlagt</span><button class="btn small" data-bmade="${esc(b.id)}">Lavet</button>`:`<span class="tag ok">Lavet</span><button class="btn small" data-bsell="${esc(b.id)}">Sæt til salg</button>`}</div>`).join('')}</div>`:`<p class="empty">Ingen produktion planlagt. Vælg en dag ovenfor og tryk "Planlæg produktion".</p>`}
+    ${S.batches.some(b=>b.status==='sold')?`<p class="muted" style="font-size:13px">${S.batches.filter(b=>b.status==='sold').length} partier er sat til salg under Isakram-køkkenet på kortet.</p>`:''}
+  </section>
+  ${vBooks()}`;
+}
+function vBatchForm(){
+  const pf = S.bprefill||{inputs:{}};
+  const avail = S.pantry.filter(p=>p.qty>0).sort((a,b)=>a.bestBefore<b.bestBefore?-1:1);
+  return `<section class="card stack" id="bform">
+    <div class="between"><h2>Ny produktion · ${esc(dayLabel(S.kday).toLowerCase())}</h2><button class="close" data-bcancel aria-label="Luk">×</button></div>
+    ${pf.ref?`<p class="banner">Opskrift: ${esc(pf.ref)}. Mængderne er foreslået ud fra opskriften; ret dem til.</p>`:''}
+    <label class="f">Hvad laver vi?<input class="inp" id="b-name" placeholder="Fx Kartoffelsuppe" value="${esc(pf.name||'')}"></label>
+    <div class="grid3"><label class="f">Udbytte<input class="inp num" id="b-yield" inputmode="decimal" placeholder="12" value="${esc(pf.yield??'')}"></label><label class="f">Enhed<input class="inp" id="b-unit" placeholder="glas" value="${esc(pf.unit||'')}"></label><label class="f">Salgspris<input class="inp num" id="b-price" inputmode="decimal" placeholder="45"></label></div>
+    <span class="lbl">Råvarer fra forrådet (mængde der bruges)</span>
+    ${avail.length?`<div class="list">${avail.map(p=>`<div class="li"><span class="grow"><b>${esc(p.name)}</b><span class="muted">${esc(p.qty)} ${esc(p.unit)} på lager</span></span>${bbTag(p.bestBefore)}<input class="inp num" id="b-in-${esc(p.id)}" inputmode="decimal" placeholder="0" value="${pf.inputs[p.id]!=null?esc(pf.inputs[p.id]):''}" style="width:72px;height:40px" aria-label="Mængde ${esc(p.name)}"></div>`).join('')}</div>`:`<p class="empty">Forrådet er tomt.</p>`}
+    <p id="b-err" class="banner" hidden></p>
+    <button class="btn block" id="b-save">Planlæg</button>
+  </section>`;
+}
+
+/* ---------- kogebøger: scanning, match og forslag ---------- */
+let sampleFn = null;
+/* Billedgenkendelse uden for Claude (fx hjemmesiden): en funktion (billede, {name,cats}, signal) => produktdata. Sættes af hjemmesidens build. */
+let recFn = null;
+const recOn = () => !!(recFn||sampleFn);
+const STAPLES = ['salt','peber','vand','sukker','is'];
+const normName = s => String(s||'').toLowerCase().split(',')[0].replace(/[^a-zæøå ]/g,' ').trim();
+const wordsOf = s => normName(s).split(/\s+/).filter(w=>w.length>=3);
+const stem = w => w.length>=4 ? w.replace(/(erne|ene|er|en|e|r)$/,'') : w;
+function wordMatch(a,b){
+  if(a===b) return true;
+  const sa=stem(a), sb=stem(b);
+  if(sa===sb && sa.length>=3) return true;
+  if(a.length>=3 && b.length>=3 && (a.endsWith(b)||b.endsWith(a)) && !/mel$/.test(a.length>b.length?a:b)===!/mel$/.test(a.length>b.length?b:a)) return true;
+  return sa.length>=6 && sb.length>=6 && Math.abs(sa.length-sb.length)<=3 && sa.slice(0,6)===sb.slice(0,6);
+}
+const isStaple = base => wordsOf(base).some(w=>STAPLES.includes(w)) || !wordsOf(base).length;
+function invMatch(base, inv){ const bw=wordsOf(base); return inv.find(i=>wordsOf(i.name).some(w=>bw.some(b=>wordMatch(w,b)))); }
+
+// Det køkkenet har eller får på dag n
+function inventoryFor(n){
+  const inv = S.pantry.filter(p=>p.qty>0 && daysLeft(p.bestBefore)>=n).map(p=>({id:p.id,name:p.name,qty:p.qty,unit:p.unit,left:daysLeft(p.bestBefore)-n,src:'forråd'}));
+  for(let k=0;k<=n;k++) incomingFor(k).forEach(x=>inv.push({id:null,listingId:x.l.id,name:x.l.name,qty:x.exp,unit:'stk.',left:k+2-n,src:k===0?'klar til afhentning':'på vej '+dayLabel(k).toLowerCase()}));
+  return inv;
+}
+const weightOf = left => left<=1 ? 3 : left<=3 ? 2 : left<=7 ? 1 : .25;
+const SELLABLE = ['suppe','syltning','bagværk','sauce','dessert'];
+function rankRecipes(n, limit=6){
+  const inv = inventoryFor(n);
+  return S.recipes.map(r=>{
+    const ings = (r.ingredients||[]).filter(i=>!isStaple(i.base||i.name));
+    if(!ings.length) return null;
+    const uses=[], missing=[], usedInv=new Set();
+    ings.forEach(i=>{ const m=invMatch(i.base||i.name, inv); if(m && !usedInv.has(m)){ usedInv.add(m); uses.push({ing:i,inv:m}); } else if(!m) missing.push(i); });
+    if(!uses.some(u=>u.inv.left<=3)) return null;           // skal bruge noget, der snart udløber
+    const cover = uses.length/ings.length;
+    if(cover<.4) return null;
+    const score = uses.reduce((s,u)=>s+weightOf(u.inv.left),0) + 3*cover - .4*missing.length + (SELLABLE.includes(r.category)&&(r.keepsDays||0)>=3?1:0);
+    return {r,uses,missing,cover,score};
+  }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,limit);
+}
+const leftTxt = l => l<=0?'i dag':l===1?'i morgen':l+' dage';
+
+// Enheder: omregn opskriftens mængde til forrådets enhed, når det giver mening
+const UNIT = {g:['kg',.001],gram:['kg',.001],kg:['kg',1],ml:['l',.001],cl:['l',.01],dl:['l',.1],l:['l',1],liter:['l',1],stk:['stk',1],'stk.':['stk',1]};
+function convert(qty, from, to){
+  const a=UNIT[String(from||'').toLowerCase().trim()], b=UNIT[String(to||'').toLowerCase().trim()];
+  if(!(qty>0) || !a || !b || a[0]!==b[0]) return null;
+  return r2(qty*a[1]/b[1]);
+}
+function planFromRecipe(id, scale=1){
+  const r = S.recipes.find(x=>x.id===id); if(!r) return;
+  const inv = inventoryFor(S.kday).filter(i=>i.src==='forråd');
+  const inputs = {};
+  (r.ingredients||[]).forEach(i=>{ if(isStaple(i.base||i.name)) return; const m=invMatch(i.base||i.name, inv); if(!m) return; const q=convert((i.qty||0)*scale, i.unit, m.unit); if(q!=null) inputs[m.id]=Math.min(q, m.qty); });
+  S.bprefill = {name:r.title, yield:r.yield?r2(r.yield*scale):'', unit:r.yieldUnit||'', inputs, recipeId:r.id, ref:`${r.bookTitle}, s. ${r.page}`};
+  S.bform = true; S._prefill = true; render();
+  document.getElementById('bform')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function vSuggest(n){
+  if(!S.recipes.length) return `<section class="card stack"><h2>Det kan vi lave</h2><p class="empty">Tilføj en kogebog nederst, så foreslår appen retter ud fra det, der er på lager og på vej.</p></section>`;
+  const top = rankRecipes(n);
+  const ai = S.ai && S.ai.day===n ? S.ai : null;
+  return `<section class="card stack" id="suggest">
+    <div class="between"><div class="stack" style="gap:2px"><span class="eb">${S.recipes.length} opskrifter i ${S.books.length} ${S.books.length===1?'kogebog':'kogebøger'}</span><h2>Det kan vi lave ${esc(dayLabel(n).toLowerCase())}</h2></div></div>
+    ${top.length?`<div class="list">${top.map(x=>`<div class="li rec">
+      <span class="grow"><b class="rt">${esc(x.r.title)}</b>
+        <span class="muted" style="font-size:13px">${esc(x.r.bookTitle)} · s. ${esc(x.r.page)}${x.r.yield?` · ${esc(x.r.yield)} ${esc(x.r.yieldUnit||'')}`:''}${x.r.keepsDays?` · holder ${esc(x.r.keepsDays)} dage`:''}</span>
+        <span style="font-size:14px">Bruger: ${x.uses.map(u=>`<span class="${u.inv.left<=1?'hot':''}">${esc(normName(u.inv.name))} (${u.inv.src==='forråd'?leftTxt(u.inv.left):esc(u.inv.src)})</span>`).join(', ')}</span>
+        ${x.missing.length?`<span class="muted" style="font-size:13px">Mangler: ${x.missing.map(i=>esc(i.base||i.name)).join(', ')}</span>`:'<span style="font-size:13px;color:var(--green);font-weight:600">Alt er på lager</span>'}
+      </span><button class="btn small" data-plan="${esc(x.r.id)}">Planlæg</button></div>`).join('')}</div>`:`<p class="empty">Ingen opskrifter passer til lageret ${esc(dayLabel(n).toLowerCase())}.</p>`}
+    ${sampleFn?`<div class="stack" style="gap:10px;border-top:1px solid var(--line);padding-top:12px">
+      ${ai&&ai.loading?`<div class="between"><span class="muted">Claude læser lager og opskrifter …</span><button class="btn small ghost" data-aistop>Stop</button></div>`:`<button class="btn ghost block" data-ai>${ai&&ai.list?'Spørg Claude igen':'Spørg Claude om en produktionsplan'}</button>`}
+      ${ai&&ai.err?`<p class="banner">${esc(ai.err)}</p>`:''}
+      ${ai&&ai.list?ai.list.map(s=>{const r=S.recipes.find(x=>x.id===s.recipeId); if(!r) return ''; return `<div class="card stack" style="background:var(--bg)"><div class="between" style="align-items:flex-start"><div class="stack" style="gap:2px"><b class="rt">${esc(r.title)}</b><span class="muted" style="font-size:13px">${esc(r.bookTitle)} · s. ${esc(r.page)}${s.sellAs?' · '+esc(s.sellAs):''}</span></div><button class="btn small" data-plan="${esc(r.id)}" data-scale="${Number(s.scale)>0?Number(s.scale):1}">Planlæg</button></div><p style="font-size:14px">${esc(s.why||'')}</p></div>`}).join(''):''}
+    </div>`:''}
+  </section>`;
+}
+
+function vBooks(){
+  const sc = S.scan;
+  const pct = sc && sc.total ? Math.round(sc.page/sc.total*100) : 0;
+  return `<section class="card stack" id="books">
+    <div class="stack" style="gap:2px"><span class="eb">Køkkenets bibliotek</span><h2>Kogebøger</h2></div>
+    <p class="muted" style="font-size:14px">Appen gemmer et register over opskrifterne: titel, sidetal, udbytte og ingredienser. Fremgangsmåden står i bogen.</p>
+    ${S.books.length?`<div class="list">${S.books.map(b=>{const n=S.recipes.filter(r=>r.bookId===b.id).length; return `<div class="li" style="flex-wrap:wrap"><span class="grow"><b>${esc(b.title)}</b><span class="muted num">${n} opskrifter${b.pages?' · '+b.pages+' sider':''}${b.status==='stopped'?` · stoppet ved side ${b.lastPage}`:''}</span></span>
+      ${b.status==='scanning'&&sc&&sc.bookId===b.id?'<span class="tag wait">Scanner</span>':b.status==='stopped'?'<span class="tag wait">Ufærdig</span>':'<span class="tag ok">Klar</span>'}
+      ${S.delBook===b.id?`<span class="row"><button class="btn small ghost" data-bdelno>Fortryd</button><button class="btn small" style="background:var(--red)" data-bdelok="${esc(b.id)}">Slet ${n} opskrifter</button></span>`:`<button class="close" aria-label="Slet ${esc(b.title)}" data-bdel="${esc(b.id)}" ${sc&&!sc.done?'disabled':''}>×</button>`}</div>`}).join('')}</div>`:''}
+    ${sc&&!sc.done?`<div class="stack" style="gap:8px;background:var(--bg);border-radius:14px;padding:12px">
+        <div class="between"><b>${esc(sc.title)}</b><button class="btn small ghost" data-scanstop>Stop</button></div>
+        <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
+        <span class="muted num" style="font-size:13px">Side ${sc.page} af ${sc.total} · ${sc.found} opskrifter fundet${sc.msg?' · '+esc(sc.msg):''}</span></div>`
+    : sampleFn ? `<div class="stack" style="gap:10px">
+        <label class="photo wide" for="k-pdf">${S.bookFile?`<b style="color:var(--ink)">${esc(S.bookFile.name)}</b><span>${Math.round(S.bookFile.size/1024/1024*10)/10} MB · vælg en anden</span>`:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z M14 3v4h4"></path></svg><span>Vælg kogebog (PDF)</span>`}</label>
+        <input type="file" id="k-pdf" accept="application/pdf,.pdf" hidden>
+        ${S.bookFile?`<label class="f">Bogens titel<input class="inp" id="k-title" value="${esc(S.bookTitle)}"></label>
+        ${S.books.find(b=>b.title===S.bookTitle&&b.status!=='done')?`<p class="banner">Denne bog blev ikke færdig sidst. Scanningen fortsætter fra side ${S.books.find(b=>b.title===S.bookTitle).lastPage+1}.</p>`:''}
+        <button class="btn block" data-scan>Scan kogebogen</button>
+        <p class="muted" style="font-size:13px">Claude læser bogen i bidder på 8 sider. En bog på 200 sider tager typisk 10-20 minutter og bruger af jeres Claude-forbrug. Lad siden være åben imens.</p>`:''}
+        ${sc&&sc.done&&sc.msg?`<p class="banner">${esc(sc.msg)}</p>`:''}
+      </div>`
+    : `<p class="banner">Scanning af kogebøger kræver, at Claude er slået til for denne side. Åbn appen på claude.ai, logget ind.</p>`}
+  </section>`;
+}
+
+/* scanning */
+let pdfjsReady = null;
+function loadPdfJs(){
+  if(pdfjsReady) return pdfjsReady;
+  const base='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  const load = src => new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('pdfjs')); document.head.appendChild(s); });
+  pdfjsReady = load(base+'pdf.worker.min.js').then(()=>load(base+'pdf.min.js')).then(()=>{ window.pdfjsLib.GlobalWorkerOptions.workerSrc = base+'pdf.worker.min.js'; return window.pdfjsLib; });
+  pdfjsReady.catch(()=>{ pdfjsReady=null; });
+  return pdfjsReady;
+}
+async function pageImage(page){
+  const v1=page.getViewport({scale:1}); const scale=Math.min(2.5, Math.sqrt(1.2e6/(v1.width*v1.height)));
+  const vp=page.getViewport({scale}); const c=document.createElement('canvas'); c.width=Math.floor(vp.width); c.height=Math.floor(vp.height);
+  const ctx=c.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,c.width,c.height);
+  await page.render({canvasContext:ctx, viewport:vp}).promise;
+  return new Promise(r=>c.toBlob(r,'image/jpeg',.82));
+}
+function scanPrompt(title, texts, imgPages){
+  return `Du laver et opskriftsregister for et professionelt køkken. Her er sider fra kogebogen "${title}".
+Find hver opskrift, der BEGYNDER på disse sider. Spring over tekst, der fortsætter en opskrift fra en tidligere side, samt forord, indholdsfortegnelser og registre.
+Svar KUN med et JSON-array. Hvert element:
+{"title": opskriftens titel, "page": sidetallet (det trykte sidetal hvis det står på siden, ellers PDF-siden), "yield": tal eller null, "yieldUnit": fx "personer", "glas", "stk.", "l", "category": en af "suppe","sauce","syltning","bagværk","hovedret","tilbehør","dessert","drikke","andet", "keepsDays": anslået antal dage retten holder sig på køl efter tilberedning, "ingredients": [{"name": som i bogen, "base": grundvaren på dansk, ental, små bogstaver (fx "kartoffel", "løg", "fløde", "æble", "makrel", "hvedemel"), "qty": tal eller null, "unit": fx "g","kg","dl","l","stk","spsk","tsk" eller ""}]}
+Gengiv IKKE fremgangsmåden. Findes der ingen opskrifter, svar [].
+${imgPages.length?`\nBillederne er PDF-side ${imgPages.join(', ')} i den rækkefølge.\n`:''}
+${texts.join('\n\n')}`;
+}
+const SCAN_STOP = {not_granted:'Claude blev ikke tilladt for denne side.', sampling_disabled:'Claude er ikke tilgængelig for jeres konto.', session_expired:'Log ind på claude.ai igen og fortsæt.', rate_limited:'Claude-forbruget er brugt op for nu. Fortsæt scanningen senere.', not_declared:'Siden har ikke adgang til Claude.', capability_disabled:'Claude kan ikke bruges i denne visning.', capability_removed:'Claude kan ikke bruges i denne visning.'};
+async function scanBook(){
+  const file=S.bookFile, title=(val('k-title')||S.bookTitle||'Kogebog').slice(0,120);
+  if(!file||!sampleFn) return;
+  let lib;
+  try{ lib=await loadPdfJs(); }catch(e){ toast('PDF-læseren kunne ikke hentes. Prøv igen.'); return; }
+  let pdf;
+  try{ pdf=await lib.getDocument({data:await file.arrayBuffer()}).promise; }catch(e){ toast('Filen kunne ikke åbnes som PDF.'); return; }
+  const total=pdf.numPages;
+  let book=S.books.find(b=>b.title===title && b.status!=='done'), bookId, start=0;
+  if(book){ bookId=book.id; start=book.lastPage||0; await db.doc('books/'+bookId).update({status:'scanning', pages:total}); }
+  else { const ref=await db.collection('books').add({title, pages:total, lastPage:0, status:'scanning', createdAt:new Date().toISOString()}); bookId=ref.id; }
+  const seen=new Set(S.recipes.filter(r=>r.bookId===bookId).map(r=>(r.title+'|'+r.page).toLowerCase()));
+  const ctl=new AbortController();
+  S.scan={bookId,title,page:start,total,found:seen.size,ctl,msg:'',done:false,skipped:[]}; S.bookFile=null; render();
+  let imgMax=0; try{ const lim=await sampleFn.limits(); imgMax=Math.min(4, lim.images?.maxCount||0); }catch(_){}
+  let p=start+1, stopMsg='';
+  while(p<=total && !ctl.signal.aborted){
+    const texts=[], imgs=[], imgPages=[]; let chars=0; const first=p;
+    while(p<=total && texts.length+imgs.length<8 && chars<24000){
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();
+      const t=tc.items.map(i=>i.str+(i.hasEOL?'\n':' ')).join('').replace(/[ \t]+/g,' ').trim();
+      if(t.length>=60){ texts.push(`--- PDF-side ${p} ---\n${t}`); chars+=t.length; }
+      else if(imgMax){ if(imgs.length>=imgMax) break; imgs.push(await pageImage(page)); imgPages.push(p); }
+      p++;
+    }
+    if(!texts.length && !imgs.length){ S.scan.page=p-1; render(); continue; }
+    S.scan.msg=`læser side ${first}-${p-1}`; render();
+    let list=[];
+    try{
+      const opts={signal:ctl.signal, modelTier: imgs.length?'default':'quick'}; if(imgs.length) opts.images=imgs;
+      const out=await sampleFn.json(scanPrompt(title,texts,imgPages), opts);
+      list=Array.isArray(out)?out:[];
+    }catch(e){
+      if(e.code==='cancelled') break;
+      if(SCAN_STOP[e.code]){ stopMsg=SCAN_STOP[e.code]; p=first; break; }
+      S.scan.skipped.push(`${first}-${p-1}`);
+    }
+    for(const x of list){
+      const t=String(x&&x.title||'').trim(); if(!t) continue;
+      const pg=Number(x.page)||first; const key=(t+'|'+pg).toLowerCase(); if(seen.has(key)) continue; seen.add(key);
+      const ings=(Array.isArray(x.ingredients)?x.ingredients:[]).slice(0,40).map(i=>({name:String(i&&i.name||'').slice(0,80), base:String(i&&i.base||i&&i.name||'').toLowerCase().slice(0,40), qty:Number(i&&i.qty)>0?Number(i.qty):null, unit:String(i&&i.unit||'').slice(0,12)})).filter(i=>i.name);
+      try{ await db.collection('recipes').add({bookId, bookTitle:title, title:t.slice(0,120), page:pg, yield:Number(x.yield)>0?Number(x.yield):null, yieldUnit:String(x.yieldUnit||'').slice(0,20), category:String(x.category||'andet').slice(0,20), keepsDays:Number(x.keepsDays)>0?Math.round(Number(x.keepsDays)):null, ingredients:ings, createdAt:new Date().toISOString()}); S.scan.found++; }
+      catch(e){ if(e.code==='quota_exceeded'){ stopMsg='Databasen er fuld. Slet en kogebog for at gøre plads.'; ctl.abort(); break; } }
+    }
+    S.scan.page=p-1;
+    try{ await db.doc('books/'+bookId).update({lastPage:p-1, recipeCount:S.scan.found}); }catch(_){}
+    render();
+  }
+  const finished = p>total && !ctl.signal.aborted && !stopMsg;
+  try{ await db.doc('books/'+bookId).update({status:finished?'done':'stopped', lastPage:Math.min(total,p-1), recipeCount:S.scan.found}); }catch(_){}
+  S.scan.done=true;
+  S.scan.msg = stopMsg || (finished ? `Færdig: ${S.scan.found} opskrifter i registeret.${S.scan.skipped.length?` Side ${S.scan.skipped.join(', ')} kunne ikke læses.`:''}` : `Stoppet ved side ${p-1}. Vælg samme PDF igen for at fortsætte.`);
+  render();
+}
+async function deleteBook(id){
+  S.delBook=null; render();
+  for(const r of S.recipes.filter(r=>r.bookId===id)){ try{ await db.doc('recipes/'+r.id).delete(); }catch(_){} }
+  try{ await db.doc('books/'+id).delete(); }catch(_){}
+  toast('Kogebogen er slettet');
+}
+
+/* Claude: produktionsplan */
+async function askChef(){
+  const n=S.kday, inv=inventoryFor(n);
+  if(!inv.length){ S.ai={day:n,err:'Der er intet på lager eller på vej denne dag.'}; render(); return; }
+  const cands = rankRecipes(n, 25);
+  if(!cands.length){ S.ai={day:n,err:'Ingen opskrifter passer til lageret endnu.'}; render(); return; }
+  const ctl=new AbortController(); S.ai={day:n,loading:true,ctl}; render();
+  const prompt = `Du er køkkenchef i Isakram-køkkenet i Storvorde. Køkkenet laver mad af overskudsvarer fra lokale producenter og sælger den videre i glas og portioner. Målet er, at intet går til spilde.
+Lager og varer på vej (${dayLabel(n).toLowerCase()}):
+${inv.map(i=>`- ${i.name}: ${i.qty} ${i.unit}, ${i.src==='forråd'?'sidste dag om '+Math.max(0,i.left)+' dage':i.src}`).join('\n')}
+
+Opskrifter fra vores kogebøger (id | titel | udbytte | holdbarhed | ingredienser):
+${cands.map(c=>`${c.r.id} | ${c.r.title} | ${c.r.yield||'?'} ${c.r.yieldUnit||''} | ${c.r.keepsDays||'?'} dage | ${(c.r.ingredients||[]).map(i=>(i.qty?i.qty+' '+i.unit+' ':'')+(i.base||i.name)).join(', ')}`).join('\n')}
+
+Foreslå højst 3 produktioner fra listen, der bruger mest muligt af det, der snart udløber, og som kan holde sig og sælges videre. Tag hensyn til mængderne på lager.
+Svar KUN med et JSON-array: [{"recipeId": id fra listen, "why": én kort sætning på dansk, "scale": hvor mange gange opskriften skal laves (tal), "sellAs": kort salgsform, fx "10 glas à 4 dl"}]`;
+  try{
+    const out=await sampleFn.json(prompt,{signal:ctl.signal});
+    S.ai={day:n, list:(Array.isArray(out)?out:[]).filter(s=>s&&S.recipes.some(r=>r.id===s.recipeId)).slice(0,3)};
+    if(!S.ai.list.length) S.ai.err='Claude fandt ingen oplagte produktioner. Prøv en anden dag.';
+  }catch(e){
+    S.ai = e.code==='cancelled' ? null : {day:n, err: SCAN_STOP[e.code] || (e.code==='invalid_json'?'Svaret kunne ikke læses. Prøv igen.':'Claude svarede ikke. Prøv igen om lidt.')};
+  }
+  render();
+}
+
+/* ---------- sheet ---------- */
+function stepper(key,max){ const q=S.qty[key]||0; return `<span class="step"><button data-dec="${esc(key)}" aria-label="Færre" ${q<=0?'disabled':''}>−</button><b class="num" style="min-width:16px;text-align:center">${q}</b><button data-inc="${esc(key)}" data-max="${max}" aria-label="Flere" ${q>=max?'disabled':''}>+</button></span>`; }
+function vSheet(){
+  if(!S.sheet) return '';
+  if(S.sheet.type==='done'){ const rs=S.sheet.res; const t=rs.reduce((s,r)=>s+r.total,0), n=rs.reduce((s,r)=>s+r.qty,0); return `<div class="scrim" data-scrim><div class="sheet" role="dialog" aria-label="Reserveret" style="background:var(--ink);color:var(--on-ink)">
+    <div class="between"><span></span><button class="close" data-x style="background:transparent;color:inherit;border-color:currentColor" aria-label="Luk">×</button></div>
+    <h1 style="font-size:42px">Reserveret.</h1><p style="opacity:.8">${esc(rs[0].producerName)} har fået besked og lægger varerne til side.</p>
+    <div class="card stack" style="color:var(--ink)"><div class="between"><span class="eb">Afhentningskode</span><span class="code num">${esc(rs[0].code)}</span></div>
+    ${rs.map(r=>`<div class="between"><span>${esc(r.qty)} × ${esc(r.productName)}</span><b class="num">${kr(r.total)}</b></div>`).join('')}
+    <div class="between" style="border-top:1px solid var(--line);padding-top:10px"><b>I alt</b><b class="num">${kr(t)}</b></div>
+    <p class="muted" style="font-size:13px">Betal ved afhentning i denne demo. Kortbetaling kommer i næste version.</p></div>
+    ${rs.some(r=>r.kind==='kortdato')?`<p style="font-family:var(--display);font-size:18px;opacity:.75">Varer, der ikke blev til affald. Tak.</p>`:`<p style="font-family:var(--display);font-size:18px;opacity:.75">Købt lokalt. Tak.</p>`}</div></div>`; }
+  const p = prodById(S.sheet.pid); if(!p) return '';
+  const items = live().filter(l=>l.producerId===p.id).sort((a,b)=>daysLeft(a.expires)-daysLeft(b.expires));
+  const prods = shelf().filter(x=>x.producerId===p.id);
+  const sel = [...items.filter(l=>(S.qty['l:'+l.id]||0)>0).map(l=>({q:S.qty['l:'+l.id],price:unitPrice(l)})), ...prods.filter(x=>(S.qty['p:'+x.id]||0)>0).map(x=>({q:S.qty['p:'+x.id],price:x.price}))];
+  const n=sel.reduce((s,a)=>s+a.q,0), t=sel.reduce((s,a)=>s+a.q*a.price,0);
+  return `<div class="scrim" data-scrim><div class="sheet" role="dialog" aria-label="${esc(p.name)}">
+    <div class="grab"></div>
+    <div class="between"><div class="row" style="gap:12px;align-items:flex-start"><span class="cic big">${catSvg(catOf(p),26)}</span><div class="stack" style="gap:4px"><span class="eb">${esc(catsTxt(p))} · ${esc(p.town||'')} · ${kmTxt(distTo(p))}</span><h2>${esc(p.name)}</h2>${p.address?`<span class="muted" style="font-size:13px">${esc(p.address)}</span>`:''}</div></div><button class="close" data-x aria-label="Luk">×</button></div>
+    ${p.story?`<p class="muted">${esc(p.story)}</p>`:''}
+    ${items.length?`<span class="eb">Tilbud</span>`+items.map(l=>{const dl=daysLeft(l.expires),u=urgency(dl);return `<div class="card stack">
+      <div class="between" style="align-items:flex-start"><div class="stack" style="gap:2px"><h3>${esc(l.name)}</h3><span class="muted num">${esc(l.unit||'pr. stk.')} · ${l.qty} tilbage</span></div><span class="tag ${u.cls}">${u.txt}</span></div>
+      <div class="between"><span class="price num"><b>${kr(unitPrice(l))}</b><s>${kr(l.normalPrice)}</s><span style="font-size:13px;font-weight:700;color:var(--red-ink)">−${Math.round(discount(dl)*100)} %</span></span>${stepper('l:'+l.id,l.qty)}</div></div>`}).join(''):''}
+    ${prods.length?`<span class="eb">Fast sortiment</span><div class="card list" style="padding:4px 12px">`+prods.map(x=>`<div class="li">${thumb(x,48)}<span class="grow"><b>${esc(x.name)}</b><span class="muted num">${esc(x.unit||'')} · ${kr(x.price)}</span></span>${stepper('p:'+x.id,x.stock)}</div>`).join('')+`</div>`:''}
+    ${!items.length&&!prods.length?`<p class="empty">Alt er solgt her lige nu.</p>`:''}
+    <button class="btn block" id="reserve" ${n&&!S.busy&&S.me?'':'disabled'} style="justify-content:space-between"><span>${n?`Reservér ${n} ${n===1?'vare':'varer'}`:'Vælg varer'}</span><span class="num">${n?kr(t):''}</span></button>
+    ${S.me?'':'<p class="muted" style="font-size:13px">Log ind på claude.ai for at reservere.</p>'}
+  </div></div>`;
+}
+
+function render(){
+  const shopOk=hasShop(); $('#r-shop').hidden=!shopOk; if(S.role==='shop'&&!shopOk) S.role='producent';
+  document.querySelectorAll('.seg.role button').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.role===S.role)));
+  const ae=document.activeElement, focusId = ae && ae.id && ae.closest('#view') && ae.matches('input,textarea,select') ? ae.id : null;
+  let sel=null; try{ sel = ae && ae.selectionStart; }catch(_){}
+  const keep = {}; document.querySelectorAll('#view input[id]:not([type=file]):not([id^="s-"]),#view textarea[id]:not([id^="s-"])').forEach(i=>keep[i.id]= i.type==='checkbox'?i.checked:i.value);
+  $('.app').classList.toggle('wide', S.role==='admin');
+  $('#view').innerHTML = `<div class="stack" style="gap:16px">${S.role==='kunde'?vKunde():S.role==='producent'?vProducent():S.role==='shop'?vShop():vAdmin()}</div>`;
+  Object.entries(keep).forEach(([id,v])=>{const i=document.getElementById(id); if(!i) return; if(i.type==='checkbox') i.checked=v; else if(!((id.startsWith('l-')||id.startsWith('b-'))&&S._prefill)) i.value=v;});
+  S._prefill=false;
+  if(focusId){ const f=document.getElementById(focusId); if(f){ f.focus(); try{ if(sel!=null) f.setSelectionRange(sel,sel); }catch(_){} } }
+  updateNet();
+  placeMaps();
+  $('#sheet-root').innerHTML = vSheet();
+}
+function updateNet(){ const o=$('#p-net'); if(!o) return; const v=num('p-price'); o.textContent = v>0 ? kr(v*(1-FEE)) : '–'; }
+
+/* ---------- actions ---------- */
+async function reserve(){
+  const p = prodById(S.sheet.pid);
+  if(!S.me) return;
+  const wantL = live().filter(l=>l.producerId===p.id && (S.qty['l:'+l.id]||0)>0);
+  const wantP = shelf().filter(x=>x.producerId===p.id && (S.qty['p:'+x.id]||0)>0);
+  if(!wantL.length && !wantP.length) return;
+  S.busy=true; render();
+  const c = code(), made=[];
+  try{
+    for(const l of wantL){
+      const cur=(await db.doc('listings/'+l.id).get()).data(); const q=Math.min(S.qty['l:'+l.id], cur?.qty||0); if(q<=0) continue;
+      await db.doc('listings/'+l.id).update({qty:cur.qty-q});
+      const price=unitPrice(cur), total=r2(q*price);
+      const r={kind:'kortdato',listingId:l.id,producerId:p.id,producerName:p.name,productName:l.name+(l.unit?', '+l.unit:''),qty:q,unitPrice:price,total,fee:r2(total*FEE),code:c,userId:S.me,status:'reserved',createdAt:new Date().toISOString()};
+      await db.collection('reservations').add(r); made.push(r);
+    }
+    for(const x of wantP){
+      const cur=(await db.doc('products/'+x.id).get()).data(); const q=Math.min(S.qty['p:'+x.id], cur?.stock||0); if(q<=0) continue;
+      await db.doc('products/'+x.id).update({stock:cur.stock-q});
+      const total=r2(q*cur.price);
+      const r={kind:'fast',productId:x.id,producerId:p.id,producerName:p.name,productName:x.name+(x.unit?', '+x.unit:''),qty:q,unitPrice:cur.price,total,fee:r2(total*FEE),code:c,userId:S.me,status:'reserved',createdAt:new Date().toISOString()};
+      await db.collection('reservations').add(r); made.push(r);
+    }
+    S.qty={}; S.busy=false;
+    S.sheet = made.length ? {type:'done',res:made} : null;
+    if(!made.length) toast('Varerne blev reserveret af en anden lige før dig.');
+  }catch(e){ S.busy=false; toast(e.code==='invalid_argument'?'Du har ikke adgang til at reservere i denne visning.':'Reservationen gik ikke igennem. Prøv igen.'); }
+  render();
+}
+
+async function saveProduct(){
+  const p=myProducer(), err=$('#p-err');
+  const name=val('p-name'), price=num('p-price'), stock=parseInt(val('p-stock'),10);
+  let msg='';
+  if(!name) msg='Giv produktet et navn.'; else if(!(price>0)) msg='Skriv en pris over 0 kr.'; else if(!(stock>=0)) msg='Skriv hvor mange I har på lager.';
+  if(msg){ err.textContent=msg; err.hidden=false; return; }
+  S.busy=true; render();
+  try{
+    await db.collection('products').add({producerId:p.id, producerName:p.name, name, unit:val('p-unit'), price:r2(price), stock, shelf:S.shelf, description:val('p-desc'), image:S.photo||null, inBox:$('#p-box').checked, paused:false, status:'pending', createdAt:new Date().toISOString()});
+    S.pform=false; S.photo=null; S.busy=false; toast('Sendt til godkendelse'); render();
+  }catch(e){ S.busy=false; render(); const er=$('#p-err'); if(er){ er.textContent=e.code==='invalid_argument'?'Produktet kunne ikke gemmes. Prøv et mindre billede.':'Produktet kunne ikke gemmes. Prøv igen.'; er.hidden=false; } }
+}
+
+async function addListing(){
+  const p=myProducer();
+  const name=val('l-name'), unit=val('l-unit'), price=num('l-price'), qty=parseInt(val('l-qty'),10);
+  if(!name||!(price>0)||!(qty>0)){ toast('Udfyld vare, normalpris og antal.'); return; }
+  const fp = S.fromProduct ? productById(S.fromProduct) : null;
+  if(fp && qty>fp.stock){ toast(`Der er kun ${fp.stock} på lager.`); return; }
+  try{
+    if(fp){ const cur=(await db.doc('products/'+fp.id).get()).data(); await db.doc('products/'+fp.id).update({stock:Math.max(0,(cur?.stock||0)-qty)}); }
+    await db.collection('listings').add({producerId:p.id, producerName:p.name, productId:fp?fp.id:null, name, unit, normalPrice:r2(price), qty, expires:addDays(S.exp), status:'live', toKitchen:$('#l-kitchen').checked, createdAt:new Date().toISOString()});
+    ['l-name','l-unit','l-price','l-qty'].forEach(id=>{const i=document.getElementById(id); if(i) i.value='';});
+    S.fromProduct=null; toast('Tilbuddet er på kortet'); render();
+  }catch(e){ toast('Varen kunne ikke gemmes.'); }
+}
+
+function readPhoto(file){
+  if(!file) return;
+  const fr=new FileReader();
+  fr.onload=()=>{ const img=new Image(); img.onload=()=>{
+      const shrink=(m)=>{ const k=Math.min(1,m/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height); return c; };
+      S.photo=shrink(480).toDataURL('image/jpeg',.72);
+      S.rec=null; render();
+      shrink(1100).toBlob(bl=>{ S.photoBlob=bl; if(recOn()) recognize(); },'image/jpeg',.85);
+    }; img.onerror=()=>toast('Billedet kunne ikke læses.'); img.src=fr.result; };
+  fr.readAsDataURL(file);
+}
+/* Billedgenkendelse: Claude kigger på billedet og foreslår navn, enhed, hylde og beskrivelse */
+function recStatus(){
+  const r=S.rec;
+  if(!recOn()) return `<span class="muted" style="font-size:14px">Tryk på billedet for at tage et nyt.</span>`;
+  if(!r) return `<span class="muted" style="font-size:14px">Gør klar …</span>`;
+  if(r.state==='busy') return `<span class="recbusy"><i></i>Vi kigger på billedet …</span><button class="linkbtn" data-recstop>Stop</button>`;
+  if(r.state==='done') return `<span class="recok">Udfyldt ud fra billedet${r.conf==='lav'?' (usikkert)':''}. Tjek og ret felterne.</span>${r.note?`<span class="muted" style="font-size:13px">${esc(r.note)}</span>`:''}<button class="linkbtn" data-recagain>Genkend igen</button>`;
+  if(r.state==='err') return `<span class="muted" style="font-size:14px">${esc(r.msg)}</span>${r.retry?'<button class="linkbtn" data-recagain>Prøv igen</button>':''}`;
+  return '';
+}
+async function recognize(){
+  if(!recOn() || !S.photoBlob) return;
+  const p=myProducer();
+  const ctl=new AbortController(); S.rec={state:'busy',ctl}; render();
+  const prompt=`Billedet er taget af en lokal fødevareproducent${p?` ("${p.name}", ${catsOf(p).length>1?'kategorier':'kategori'}: ${catsTxt(p)})`:''}, som vil lægge varen i sin webshop.
+Identificér varen på billedet, og foreslå produktdata på dansk til shoppen.
+Svar KUN med JSON: {"name": kort produktnavn som kunden forstår (fx "Gule løg", "Rugbrød med solsikke", "Lynghonning"), "unit": salgsenhed hvis den kan ses eller er oplagt (fx "1 kg", "500 g", "pr. stk.", "10 stk.") ellers "", "shelf": én af ${JSON.stringify(SHELVES)} (1 Lokal = lokale råvarer og fødevarer; 1 Basis = kolonial; 1 Hjem = husholdning; 1 Krop = personlig pleje), "description": én kort, saglig sætning om varen, kun ud fra det der kan ses, "confidence": "høj", "middel" eller "lav", "note": kort bemærkning hvis noget er uklart, ellers ""}.
+Find ikke på mærker, oprindelse, priser eller certificeringer, som ikke tydeligt står på billedet.`;
+  try{
+    const out=recFn ? await recFn(S.photoBlob,{name:p?p.name:'',cats:p?catsTxt(p):''},ctl.signal) : await sampleFn.json(prompt,{images:[S.photoBlob], signal:ctl.signal});
+    if(!out || !out.name) throw {code:'invalid_json'};
+    const prev=S.rec&&S.rec.filled||{};
+    const setIf=(id,v)=>{ const el=document.getElementById(id); if(!el||!v) return; if(!el.value.trim()||el.value===prev[id]) el.value=v; };
+    if(SHELVES.includes(out.shelf)) S.shelf=out.shelf;
+    const filled={'p-name':String(out.name).slice(0,80),'p-unit':String(out.unit||'').slice(0,20),'p-desc':String(out.description||'').slice(0,300)};
+    const vals={}; ['p-name','p-unit','p-desc','p-price','p-stock'].forEach(id=>{ const el=document.getElementById(id); if(el) vals[id]=el.value; });
+    S.rec={state:'done',conf:out.confidence,note:String(out.note||'').slice(0,160),filled};
+    render();
+    Object.entries(vals).forEach(([id,v])=>{ const el=document.getElementById(id); if(el) el.value=v; });
+    Object.entries(filled).forEach(([id,v])=>setIf(id,v));
+    updateNet();
+  }catch(e){
+    if(e&&e.code==='cancelled'){ S.rec={state:'err',msg:'Genkendelse stoppet. Udfyld selv, eller prøv igen.',retry:true}; }
+    else if(e&&['not_granted','sampling_disabled','images_unavailable','capability_disabled','capability_removed','not_declared','not_configured'].includes(e.code)){ S.rec={state:'err',msg:'Billedgenkendelse er ikke tilgængelig her. Udfyld felterne selv.'}; }
+    else if(e&&e.code==='rate_limited'){ S.rec={state:'err',msg:'Der er taget mange billeder lige nu. Udfyld felterne selv, eller prøv igen om lidt.'}; }
+    else S.rec={state:'err',msg:'Varen kunne ikke genkendes. Udfyld selv, eller prøv et skarpere billede.',retry:true};
+    const vals={}; ['p-name','p-unit','p-desc','p-price','p-stock'].forEach(id=>{ const el=document.getElementById(id); if(el) vals[id]=el.value; });
+    render(); Object.entries(vals).forEach(([id,v])=>{ const el=document.getElementById(id); if(el) el.value=v; });
+  }
+}
+
+async function refreshDemo(){
+  const demo = S.listings.filter(l=>l.demo); let i=0;
+  for(const l of demo){ await db.doc('listings/'+l.id).update({expires:addDays(i%3), qty:Math.max(l.qty, l.demoQty||3), status:'live'}); i++; }
+  toast(demo.length?'Demo-datoer fornyet':'Ingen demovarer fundet');
+}
+
+
+async function savePantry(){
+  const name=val('f-name'), qty=num('f-qty'), unit=val('f-unit')||'stk.', bb=val('f-bb');
+  if(!name||!(qty>0)||!bb){ toast('Udfyld vare, mængde og bedst før-dato.'); return; }
+  try{ await db.collection('pantry').add({name, qty:r2(qty), unit, bestBefore:bb, source:'Eget forråd', createdAt:new Date().toISOString()}); ['f-name','f-qty','f-unit'].forEach(i=>{const el=document.getElementById(i); if(el) el.value='';}); toast('Lagt i forrådet'); }
+  catch(e){ toast('Varen kunne ikke gemmes.'); }
+}
+async function saveBatch(){
+  const err=$('#b-err'); const name=val('b-name'), yld=num('b-yield'), unit=val('b-unit')||'stk.', price=num('b-price');
+  const inputs = S.pantry.filter(p=>p.qty>0).map(p=>({p, q:num('b-in-'+p.id)})).filter(x=>x.q>0);
+  let msg='';
+  if(!name) msg='Skriv hvad der skal laves.'; else if(!(yld>0)) msg='Skriv hvor meget det giver.'; else if(!(price>=0)) msg='Skriv en salgspris.'; else if(!inputs.length) msg='Vælg mindst én råvare fra forrådet.';
+  else { const over=inputs.find(x=>x.q>x.p.qty); if(over) msg=`Der er kun ${over.p.qty} ${over.p.unit} ${over.p.name}.`; }
+  if(msg){ err.textContent=msg; err.hidden=false; return; }
+  try{
+    await db.collection('batches').add({recipeId:S.bprefill?.recipeId||null, ref:S.bprefill?.ref||null, name, yield:r2(yld), unit, price:r2(price), date:addDays(S.kday), status:'planned', inputs:inputs.map(x=>({pantryId:x.p.id, name:x.p.name, qty:r2(x.q), unit:x.p.unit})), createdAt:new Date().toISOString()});
+    S.bform=false; S.bprefill=null; toast('Produktion planlagt'); render();
+  }catch(e){ err.textContent='Produktionen kunne ikke gemmes.'; err.hidden=false; }
+}
+async function batchMade(id){
+  const b=S.batches.find(x=>x.id===id); if(!b) return;
+  for(const i of b.inputs){ const ref=db.doc('pantry/'+i.pantryId); const cur=(await ref.get()).data(); if(cur) await ref.update({qty:Math.max(0,r2((cur.qty||0)-i.qty))}); }
+  await db.doc('batches/'+id).update({status:'made', madeAt:new Date().toISOString()});
+  toast('Råvarerne er trukket fra forrådet');
+}
+async function batchSell(id){
+  const b=S.batches.find(x=>x.id===id); if(!b) return;
+  if(!prodById(KITCHEN_ID)) await db.doc('producers/'+KITCHEN_ID).set({name:'Isakram-køkkenet', category:'Andet', town:'Storvorde', story:'Det, ingen nåede at hente, laver vi til mad på Aagade 30.', lat:SHOP.lat, lng:SHOP.lng, address:'Aagade 30, 9280 Storvorde', status:'approved', ownerId:'isakram', createdAt:new Date().toISOString()});
+  await db.collection('products').add({producerId:KITCHEN_ID, producerName:'Isakram-køkkenet', name:b.name, unit:b.unit, price:b.price, stock:Math.floor(b.yield), shelf:'1 Lokal', description:'Lavet af '+b.inputs.map(i=>i.name).join(', ')+'.', image:null, inBox:true, paused:false, status:'approved', batchId:id, createdAt:new Date().toISOString()});
+  await db.doc('batches/'+id).update({status:'sold'});
+  toast('På hylden hos Isakram-køkkenet');
+}
+
+async function bump(id,delta){ const cur=(await db.doc('products/'+id).get()).data(); if(!cur) return; await db.doc('products/'+id).update({stock:Math.max(0,(cur.stock||0)+delta)}); }
+
+document.addEventListener('click', async e=>{
+  if(e.target.closest('#mapedit')){ const svg=$('#mapedit'), r=svg.getBoundingClientRect(); S.pin={x:Math.round((e.clientX-r.left)/r.width*100), y:Math.min(98,Math.round((e.clientY-r.top)/r.height*100)+4)}; render(); return; }
+  const t = e.target.closest('button,[data-pid],[data-scrim]');
+  if(!t) return;
+  const d=t.dataset;
+  if(d.role){ S.role=d.role; S.sheet=null; render(); return; }
+  if(t.matches('[data-scrim]') && e.target===t){ S.sheet=null; S.qty={}; render(); return; }
+  if(d.x!==undefined){ S.sheet=null; S.qty={}; render(); return; }
+  if(d.open||d.pid){ S.sheet={type:'producer',pid:d.open||d.pid}; S.qty={}; render(); return; }
+  if(d.inc){ S.qty[d.inc]=Math.min(+d.max,(S.qty[d.inc]||0)+1); render(); return; }
+  if(d.dec){ S.qty[d.dec]=Math.max(0,(S.qty[d.dec]||0)-1); render(); return; }
+  if(d.ptab){ S.ptab=d.ptab; render(); return; }
+  if(d.shelf){ S.shelf=d.shelf; render(); return; }
+  if(d.cat){ S.cat=d.cat; render(); return; }
+  if(d.exp!==undefined){ S.exp=+d.exp; render(); return; }
+  if(d.pcancel!==undefined){ S.rec?.ctl?.abort(); S.pform=false; S.photo=null; S.photoBlob=null; S.rec=null; render(); return; }
+  if(d.recagain!==undefined){ recognize(); return; }
+  if(d.recstop!==undefined){ S.rec?.ctl?.abort(); return; }
+  if(d.plan){ planFromRecipe(d.plan, Number(d.scale)||1); return; }
+  if(d.ai!==undefined){ askChef(); return; }
+  if(d.aistop!==undefined){ S.ai?.ctl?.abort(); return; }
+  if(d.scan!==undefined){ scanBook(); return; }
+  if(d.scanstop!==undefined){ S.scan?.ctl?.abort(); S.scan.msg='stopper efter denne bid …'; render(); return; }
+  if(d.bdel){ S.delBook=d.bdel; render(); return; }
+  if(d.bdelno!==undefined){ S.delBook=null; render(); return; }
+  if(d.bdelok){ deleteBook(d.bdelok); return; }
+  if(d.radius!==undefined){ S.radius=+d.radius; render(); return; }
+  if(d.sufind!==undefined){ suFind(); return; }
+  if(d.sutry){ suFind(d.sutry); return; }
+  if(d.sumanual!==undefined){ S.su.manual=true; S.su.co=null; S.su.notFound=false; render(); return; }
+  if(d.sunext!==undefined){ suNext(); return; }
+  if(d.suback!==undefined){ suCollect(); S.su.err=null; S.su.step=Math.max(1,S.su.step-1); render(); return; }
+  if(d.susend!==undefined){ suSend(); return; }
+  if(d.suverify!==undefined){ suVerify(); return; }
+  if(d.sucat){ suCollect(); const su=S.su, c=d.sucat; su.cats=su.cats.includes(c)?su.cats.filter(x=>x!==c):[...su.cats,c]; if(!su.cats.includes(su.cat)) su.cat=su.cats[0]||null; su.err=null; render(); return; }
+  if(d.suprim){ suCollect(); S.su.cat=d.suprim; render(); return; }
+  if(d.fcat!==undefined){ S.fcat=d.fcat; render(); return; }
+  if(d.atab){ S.atab=d.atab; render(); return; }
+  if(d.ctype){ S.ctype=d.ctype; render(); return; }
+  if(d.kday!==undefined){ S.kday=+d.kday; render(); return; }
+  if(d.bnew!==undefined){ S.bprefill=null; S._prefill=true; S.bform=true; render(); document.getElementById('b-name')?.focus(); return; }
+  if(d.bcancel!==undefined){ S.bform=false; S.bprefill=null; render(); return; }
+  if(d.pantrynew!==undefined){ S.pform2=!S.pform2; render(); return; }
+  if(d.tokd){ S.fromProduct=d.tokd; S.ptab='kortdato'; S._prefill=true; render(); return; }
+  switch(t.id){
+    case 'reserve': reserve(); return;
+    case 'f-last': S.onlyLast=!S.onlyLast; render(); return;
+    case 's-send': signup(); return;
+    case 'l-add': addListing(); return;
+    case 'p-new': S.pform=true; S.photo=null; S.photoBlob=null; S.rec=null; render(); document.getElementById('p-name')?.focus(); return;
+    case 'p-save': saveProduct(); return;
+    case 'd-refresh': refreshDemo(); return;
+    case 'f-save': savePantry(); return;
+    case 'b-save': saveBatch(); return;
+  }
+  try{
+    if(d.pick){ await db.doc('reservations/'+d.pick).update({status:'picked', pickedAt:new Date().toISOString()}); toast('Markeret som udleveret'); }
+    else if(d.del){ await db.doc('listings/'+d.del).update({status:'removed'}); toast('Fjernet fra kortet'); }
+    else if(d.mycat||d.myprim){ const p=myProducer(); if(!p) return; let cs=catsOf(p), prim=catOf(p);
+      if(d.mycat){ cs=cs.includes(d.mycat)?cs.filter(x=>x!==d.mycat):[...cs,d.mycat]; if(!cs.length){ toast('Vælg mindst én kategori'); return; } if(!cs.includes(prim)) prim=cs[0]; } else prim=d.myprim;
+      await db.doc('producers/'+p.id).update({categories:cs, category:prim}); toast('Kategorier gemt'); }
+    else if(d.ok){ await db.doc('producers/'+d.ok).update({status:'approved'}); toast('Producentens butik er åbnet'); }
+    else if(d.rej){ await db.doc('producers/'+d.rej).update({status:'rejected'}); toast('Ansøgningen er afvist'); }
+    else if(d.pok){ await db.doc('products/'+d.pok).update({status:'approved'}); toast('Produktet er på hylden'); }
+    else if(d.prej){ await db.doc('products/'+d.prej).update({status:'rejected'}); toast('Produktet er afvist'); }
+    else if(d.pause){ const x=productById(d.pause); await db.doc('products/'+d.pause).update({paused:!x.paused}); toast(x.paused?'Tilbage på hylden':'Sat på pause'); }
+    else if(d.sinc){ await bump(d.sinc,1); }
+    else if(d.sdec){ await bump(d.sdec,-1); }
+    else if(d.kitchen){ const l=S.listings.find(x=>x.id===d.kitchen); await db.doc('listings/'+d.kitchen).update({qty:0, status:'kitchen'}); if(l) await db.collection('pantry').add({name:l.name+(l.unit?', '+l.unit:''), qty:l.qty, unit:'stk.', bestBefore:addDays(2), source:'Tilbud fra '+l.producerName, listingId:l.id, createdAt:new Date().toISOString()}); toast('Lagt i forrådet'); }
+    else if(d.finc||d.fdec){ const id=d.finc||d.fdec; const cur=(await db.doc('pantry/'+id).get()).data(); if(cur) await db.doc('pantry/'+id).update({qty:Math.max(0,r2((cur.qty||0)+(d.finc?1:-1)))}); }
+    else if(d.bmade){ await batchMade(d.bmade); }
+    else if(d.bsell){ await batchSell(d.bsell); }
+  }catch(err){ toast('Ændringen kunne ikke gemmes.'); }
+});
+document.addEventListener('change', e=>{
+  const id=e.target.id;
+  if(id==='act'){ S.acting=e.target.value||null; S.ptab='overblik'; S.pform=false; if(hasShop()) S.role='shop'; else if(S.role==='shop') S.role='producent'; render(); }
+  else if(id==='l-kitchen'){ S.kitchen=e.target.checked; }
+  else if(id==='p-box'){ S.inBox=e.target.checked; }
+  else if(id==='p-photo'||id==='p-gallery'){ readPhoto(e.target.files[0]); }
+  else if(id==='k-rate'){ S.sellRate=(+e.target.value)/100; render(); }
+  else if(id==='k-pdf'){ const f=e.target.files[0]; if(f){ S.bookFile=f; S.bookTitle=f.name.replace(/\.pdf$/i,'').replace(/[_-]+/g,' ').trim(); render(); } }
+  else if(id==='k-title'){ S.bookTitle=e.target.value.trim(); render(); }
+  else if(id==='pos'){ const t=TOWNS.find(x=>x[0]===e.target.value); if(t){ S.myPos={name:t[0],lat:t[1],lng:t[2]}; render(); } }
+  else if(id==='s-accept'&&S.su){ S.su.accept=e.target.checked; }
+  else if(id==='c-prod'){ S.cprod=e.target.value; render(); }
+  else if(id==='l-from'){ S.fromProduct=e.target.value||null; S._prefill=true; render(); }
+});
+document.addEventListener('input', e=>{ const id=e.target.id; if(id&&id.startsWith('s-')&&S.su){ suCollect(); return; } if(id==='p-price') updateNet(); else if(id==='c-q'){ S.cq=e.target.value; render(); } else if(id==='k-rate'){ const o=document.getElementById('k-rate-v'); if(o) o.textContent=e.target.value+' %'; } });
+document.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='s-cvr'){ e.preventDefault(); suFind(); return; } if(e.key==='Enter' && e.target.id==='s-code'){ e.preventDefault(); suVerify(); return; } if((e.key==='Enter'||e.key===' ') && e.target.matches('.pin')){ e.preventDefault(); e.target.dispatchEvent(new MouseEvent('click',{bubbles:true})); } if(e.key==='Escape'&&S.sheet){ S.sheet=null; render(); } });
+
+/* ---------- boot ---------- */
+render();
+(async()=>{
+  if(!window.claude?.use){ showNotice('Åbn siden på claude.ai for at se live data.'); return; }
+  [db,user,sampleFn] = await Promise.all([claude.use('db'), claude.use('user'), claude.use('sample')]);
+  if(!db){ showNotice('Databasen er ikke tilgængelig i denne visning. Log ind på claude.ai for at bruge appen.'); S.ready=true; render(); return; }
+  if(user){ S.me = await user.id(); const adm = await user.canEdit(); if(!adm){ $('#r-admin').hidden=true; if(S.role==='admin'){ S.role='kunde'; render(); } } }
+  const sub = (col,key) => db.collection(col).onSnapshot(s=>{ S[key]=s.docs.map(d=>({id:d.id,...d.data()})); S.ready=true; render(); }, ()=>showNotice('Forbindelsen til databasen blev afbrudt. Genindlæs siden.'));
+  sub('producers','producers'); sub('listings','listings'); sub('products','products'); sub('reservations','reservations'); sub('pantry','pantry'); sub('batches','batches'); sub('books','books'); sub('recipes','recipes');
+})();
+function showNotice(t){ const n=$('#notice'); n.textContent=t; n.hidden=false; }
+})();
+</script>
