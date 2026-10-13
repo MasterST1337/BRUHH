@@ -4,7 +4,7 @@
    <script src="fodevarecentralen-sektion.js"></script>
    Kræver at fodevarecentralen.html ligger i samme mappe som index.html. */
 (function(){
-  var APP_URL = 'fodevarecentralen.html?v=7';  // hæv tallet, når appen opdateres, så browsere henter den nye version
+  var APP_URL = 'fodevarecentralen.html?v=8';  // hæv tallet, når appen opdateres, så browsere henter den nye version
 
   var css = '' +
   '#page-app{max-width:1100px}' +

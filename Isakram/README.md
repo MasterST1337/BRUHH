@@ -9,7 +9,8 @@ Isakram tager 10 % af salgsprisen. Producenten får 90 %, og der er intet oprett
 **Kunde**
 - Kort over producenter med varer og tilbud. Nålene har kategori-ikoner, og ringens farve viser, hvor kort datoen er.
 - Filtrér på afstand, kategori og "kun sidste dag".
-- Reservér og få en afhentningskode.
+- Betal med MobilePay eller kort. Beløbet reserveres ved bestilling og trækkes først ved afhentning (simuleret).
+- Få en afhentningskode, og annullér selv, hvis planerne ændrer sig.
 
 **Bliv producent**
 - Tilmelding i fem trin: CVR-opslag, bekræftelse af telefon, kategorier (gerne flere), afhentningssted og producentaftale.
@@ -19,9 +20,11 @@ Isakram tager 10 % af salgsprisen. Producenten får 90 %, og der er intet oprett
 - Overblik over salg, ordrer til afhentning og hvad producenten laver.
 - Produkter: tag et billede med bagkameraet, og Claude genkender varen og udfylder navn, enhed, hylde og beskrivelse.
 - Tilbud: læg varer med kort dato ud. Prisen falder automatisk mod datoen.
+- Udbetaling: opret betalingskonto, se salg, Isakrams 10 % og ugentlige udbetalinger med afregningsbilag (simuleret).
 
 **Isakram**
 - Godkend producenter og varer, se alle varer i omløb og køkkenets uge med forslag fra kogebøger.
+- Økonomi: pengestrømmen fra kunde til producent, provision, betalingsgebyrer og udbetalinger.
 
 ## Filer
 
@@ -40,7 +43,7 @@ Isakram tager 10 % af salgsprisen. Producenten får 90 %, og der er intet oprett
 1. Læg filerne fra `web/` i samme mappe som hjemmesidens `index.html`.
 2. Tilføj denne linje i `index.html` lige før `</body>`:
    ```html
-   <script src="fodevarecentralen-sektion.js?v=7"></script>
+   <script src="fodevarecentralen-sektion.js?v=8"></script>
    ```
    Hæv tallet, hver gang appen opdateres, så browsere henter den nye version. Tallet i `APP_URL` øverst i `fodevarecentralen-sektion.js` skal også hæves.
 3. Billedgenkendelse (valgfri, kræver PHP med curl):
@@ -57,4 +60,4 @@ Kortdata: © OpenStreetMap-bidragydere, © CARTO. Kortbibliotek: [Leaflet](https
 
 ## Status
 
-Proof of concept. CVR-opslag og SMS-bekræftelse er simuleret med demodata. En rigtig udgave skal slå CVR-numre op via en server-API og sende SMS-koder gennem en SMS-tjeneste.
+Proof of concept. CVR-opslag, SMS-bekræftelse og betaling er simuleret med demodata. Betalingen er tænkt bygget på Stripe Connect med manuel trækning: Isakrams 10 % som platformsgebyr og resten direkte til producentens egen konto. En rigtig udgave skal slå CVR-numre op via en server-API og sende SMS-koder gennem en SMS-tjeneste.

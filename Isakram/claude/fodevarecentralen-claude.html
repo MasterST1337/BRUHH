@@ -33,6 +33,16 @@ button{cursor:pointer}
 .between{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .btn{height:50px;border-radius:26px;border:0;background:var(--ink);color:var(--on-ink);font-weight:600;font-size:15px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.paym{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);text-align:left;width:100%;font:inherit;color:var(--ink)}
+.paym[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.paym .pm{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:11px;letter-spacing:.02em}
+.pm.mp{background:#5A78FF;color:#fff}.pm.cd{background:var(--sand);color:var(--ink)}
+.paym .dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--line)}.paym[aria-pressed="true"] .dot{border:6px solid var(--ink)}
+.mpbox{background:#fff;border-radius:22px;padding:22px 18px;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:14px;color:#14161a;text-align:center}
+.mpbox .amt{font-size:40px;font-weight:700;letter-spacing:-.02em}
+.mpbtn{height:52px;border-radius:26px;border:0;font-weight:700;font-size:16px}
+.payline{display:flex;justify-content:space-between;gap:10px;font-size:14px}.payline>.num,.payline>b.num{white-space:nowrap}
+.ledger{width:100%;border-collapse:collapse;font-size:13.5px}.ledger th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;padding:6px 4px;border-bottom:1px solid var(--line)}.ledger td{padding:8px 4px;border-bottom:1px solid var(--line);vertical-align:top}.ledger td.n,.ledger th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .btn.small{height:40px;font-size:14px;padding:0 14px;border-radius:20px}
 .btn[disabled]{opacity:.4;cursor:not-allowed}
 .btn.block{width:100%}
@@ -96,6 +106,8 @@ textarea.inp{height:auto;padding:12px 14px;resize:vertical;min-height:72px}
 .mapedit{cursor:crosshair}
 @media (prefers-reduced-motion:no-preference){.sheet{animation:up .22s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
 .lbl{font-size:13px;font-weight:600;color:var(--muted)}
+.seg.sub.four{grid-template-columns:repeat(4,minmax(0,1fr))}.seg.sub.four button{font-size:13px;padding:0 4px}
+.stat b{white-space:nowrap}
 .seg.sub{background:transparent;border:1.5px solid var(--line);padding:3px}
 .seg.sub button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);box-shadow:none}
 .ph{display:grid;place-items:center;border-radius:12px;background:var(--sand);color:var(--amber);flex:none}
@@ -201,7 +213,7 @@ input[type=range]{width:100%}
 const FEE = 0.10;
 const CATS = ['Grønt','Mejeri','Kød og fisk','Bageri','Mel og korn','Honning og syltet','Andet'];
 const SHELVES = ['1 Lokal','1 Basis','1 Hjem','1 Krop'];
-const S = {producers:[],listings:[],products:[],reservations:[],role:'kunde',ready:false,me:null,
+const S = {producers:[],listings:[],products:[],reservations:[],payouts:[],role:'kunde',ready:false,me:null,
   acting:null, sheet:null, qty:{}, onlyLast:false, pin:null, cat:'Grønt', exp:1, kitchen:true, busy:false,
   ptab:'overblik', pform:false, atab:'overblik', cq:'', ctype:'alle', cprod:'', sellRate:.5, kday:0, bform:false, pform2:false, pantry:[], batches:[], books:[], recipes:[], scan:null, bookFile:null, bookTitle:'', delBook:null, ai:null, bprefill:null, su:null, fcat:'', myPos:{name:'Storvorde',lat:57.00392,lng:10.10125}, radius:20, shelf:'1 Lokal', inBox:true, photo:null, fromProduct:null};
 let db=null, user=null;
@@ -227,6 +239,20 @@ const productById = id => S.products.find(p=>p.id===id);
 const approvedP = id => prodById(id)?.status==='approved';
 const live = () => S.listings.filter(l => l.status==='live' && l.qty>0 && daysLeft(l.expires)>=0 && approvedP(l.producerId));
 const shelf = () => S.products.filter(p => p.status==='approved' && !p.paused && p.stock>0 && approvedP(p.producerId));
+/* ---------- betaling (simuleret Stripe Connect) ----------
+   I den rigtige app opretter en lille server betalingen hos Stripe med manuel trækning:
+   beløbet reserveres ved bestilling og trækkes ved afhentning. Isakrams 10 % trækkes fra
+   som platformsgebyr, og resten udbetales til producentens egen Stripe-konto. Her er alt simuleret. */
+const PAYFEE = {pct:0.015, fixed:1.80};   // EKSEMPEL på betalingsgebyr pr. betaling. Ret til jeres aftale med Stripe.
+const PAYM = {mobilepay:'MobilePay', card:'Kort'};
+const payState = r => r.payStatus || (r.status==='picked'?'captured':r.status==='reserved'?'authorized':'released');
+const payFeeOf = r => r.payFee!=null ? r.payFee : r2(r.total*PAYFEE.pct + (r.payFixed===false?0:PAYFEE.fixed));
+const payoutOk = p => !!(p && p.payout && p.payout.status==='active');
+const payMethodTxt = r => r.payMethod ? PAYM[r.payMethod]||r.payMethod : 'Betaling ved afhentning';
+function nextPayday(){ const d=new Date(); const add=(5-d.getDay()+7)%7||7; d.setDate(d.getDate()+add); return d.toLocaleDateString('da-DK',{weekday:'long',day:'numeric',month:'long'}); }
+const krs = n => Math.round(n).toLocaleString('da-DK')+' kr.';
+const dateTxt = iso => iso ? new Date(iso).toLocaleDateString('da-DK',{day:'numeric',month:'short'}) : '';
+const unpaid = pid => S.reservations.filter(r=>r.producerId===pid && payState(r)==='captured' && !r.payoutId);
 const myProducer = () => S.acting ? prodById(S.acting) : S.producers.find(p=>p.ownerId && p.ownerId===S.me);
 const thumb = (p,size=56) => p.image ? `<img src="${esc(p.image)}" alt="" style="width:${size}px;height:${size}px;border-radius:12px;object-fit:cover;flex:none">` : `<span class="ph" style="width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 40 200" height="${Math.round(size*.5)}"><circle cx="20" cy="14" r="10" fill="currentColor"></circle><line x1="20" y1="44" x2="20" y2="194" stroke="currentColor" stroke-width="6" stroke-linecap="round"></line></svg></span>`;
 
@@ -534,7 +560,7 @@ function vKunde(){
     ${outside&&inside.length?`<button class="btn ghost small" data-radius="0">${outside} ${outside===1?'producent':'producenter'} længere væk</button>`:''}
   </section>
   ${mine.length?`<section class="card stack"><h2>Mine reservationer</h2><div class="list">${mine.map(r=>`
-    <div class="li"><span class="grow"><b>${esc(r.qty)} × ${esc(r.productName)}</b><span class="muted">${esc(r.producerName)} · ${kr(r.total)}</span></span><b class="num" style="font-family:var(--display);font-size:20px;letter-spacing:.1em">${esc(r.code)}</b></div>`).join('')}</div></section>`:''}`;
+    <div class="li"><span class="grow"><b>${esc(r.qty)} × ${esc(r.productName)}</b><span class="muted">${esc(r.producerName)} · ${kr(r.total)} · ${r.payMethod?esc(payMethodTxt(r))+', reserveret':'betales ved afhentning'}</span>${r.payMethod?`<button class="linkbtn" style="align-self:flex-start;font-size:13px" data-rcancel="${esc(r.id)}">Annullér og frigiv beløbet</button>`:''}</span><b class="num" style="font-family:var(--display);font-size:20px;letter-spacing:.1em">${esc(r.code)}</b></div>`).join('')}</div></section>`:''}`;
 }
 
 /* ---------- producent ---------- */
@@ -573,11 +599,11 @@ function vProducent(){
 function vShop(){
   const p = myProducer();
   if(!p || p.status!=='approved') return vProducent();
-  const tabs = [['overblik','Overblik'],['produkter','Produkter'],['kortdato','Tilbud']];
-  const body = S.ptab==='produkter' ? vProducts(p) : S.ptab==='kortdato' ? vKortdato(p) : vOverblik(p);
+  const tabs = [['overblik','Overblik'],['produkter','Produkter'],['kortdato','Tilbud'],['udbetal','Udbetaling']];
+  const body = S.ptab==='produkter' ? vProducts(p) : S.ptab==='kortdato' ? vKortdato(p) : S.ptab==='udbetal' ? vPayouts(p) : vOverblik(p);
   return `
   <div class="between"><div class="row" style="gap:12px"><span class="cic big">${catSvg(catOf(p),26)}</span><div class="stack" style="gap:2px"><span class="eb">Din shop · ${esc(catsTxt(p))}</span><h2>${esc(p.name)}</h2></div></div><span class="tag ok">Åben</span></div>
-  <div class="seg sub" role="tablist" aria-label="Din shop">${tabs.map(([k,t])=>`<button role="tab" data-ptab="${k}" aria-pressed="${S.ptab===k}">${t}</button>`).join('')}</div>
+  <div class="seg sub four" role="tablist" aria-label="Din shop">${tabs.map(([k,t])=>`<button role="tab" data-ptab="${k}" aria-pressed="${S.ptab===k}">${t}</button>`).join('')}</div>
   ${body}
   ${actSel('Demo: skift producent')}`;
 }
@@ -592,17 +618,87 @@ function vOverblik(p){
   const low = prods.filter(x=>x.status==='approved' && x.stock<=2);
   return `
   <div class="stats"><div class="stat dark"><span>Solgt</span><b class="num">${kr(sold)}</b></div><div class="stat"><span>Til jer, 90 %</span><b class="num">${kr(sold*(1-FEE))}</b></div><div class="stat"><span>Reddet</span><b class="num">${saved} stk.</b></div></div>
+  ${!payoutOk(p)&&p.id!==KITCHEN_ID?`<p class="banner" style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span>Opret en betalingskonto, så I kan få jeres penge udbetalt.</span><button class="btn small" data-ptab="udbetal">Opret</button></p>`:''}
   ${waiting?`<p class="banner">${waiting} ${waiting===1?'produkt venter':'produkter venter'} på Isakrams godkendelse.</p>`:''}
   ${low.length?`<p class="banner" style="background:var(--card);border:1px solid var(--line)">Næsten udsolgt: ${low.map(x=>esc(x.name)+' ('+x.stock+')').join(', ')}.</p>`:''}
   <section class="card stack">
     <div class="between"><h2>Til afhentning</h2><span class="muted num">${open.length}</span></div>
-    ${open.length?`<div class="list">${open.map(r=>`<div class="li"><span class="grow"><b>${esc(r.qty)} × ${esc(r.productName)}</b><span class="muted">Kode <b class="num" style="color:var(--ink);letter-spacing:.08em">${esc(r.code)}</b> · ${kr(r.total)} · ${r.kind==='fast'?'Sortiment':'Tilbud'}</span></span><button class="btn small" data-pick="${esc(r.id)}">Udleveret</button></div>`).join('')}</div>`:`<p class="empty">Ingen reservationer endnu. De dukker op her, så snart en kunde reserverer.</p>`}
+    ${open.length?`<div class="list">${open.map(r=>`<div class="li"><span class="grow"><b>${esc(r.qty)} × ${esc(r.productName)}</b><span class="muted">Kode <b class="num" style="color:var(--ink);letter-spacing:.08em">${esc(r.code)}</b> · ${kr(r.total)} · ${r.kind==='fast'?'Sortiment':'Tilbud'}</span><span class="muted" style="font-size:12.5px">${r.payMethod?`${esc(payMethodTxt(r))}: reserveret, trækkes ved udlevering`:'Betales ved afhentning'}</span></span><span class="stack" style="gap:6px;align-items:flex-end"><button class="btn small" data-pick="${esc(r.id)}">Udleveret</button><button class="linkbtn" style="font-size:13px" data-noshow="${esc(r.id)}">Ikke hentet</button></span></div>`).join('')}</div>`:`<p class="empty">Ingen reservationer endnu. De dukker op her, så snart en kunde reserverer.</p>`}
   </section>
   ${p.id!==KITCHEN_ID?`<section class="card stack"><div class="between"><h3>Det laver I</h3><span class="muted" style="font-size:13px">Tryk for at til- eller fravælge</span></div>
     <div class="chips">${SIGNUP_CATS.map(c=>`<button class="chip ic" data-mycat="${esc(c)}" aria-pressed="${catsOf(p).includes(c)}">${catSvg(c,18)}${esc(c)}</button>`).join('')}</div>
     ${catsOf(p).length>1?`<div class="stack" style="gap:6px"><span class="lbl">Ikon på kortet</span><div class="chips">${catsOf(p).map(c=>`<button class="chip ic" data-myprim="${esc(c)}" aria-pressed="${catOf(p)===c}">${catSvg(c,18)}${esc(c)}</button>`).join('')}</div></div>`:''}
   </section>`:''}
   ${picked.length?`<section class="card stack"><h3>Seneste salg</h3><div class="list">${picked.sort((a,b)=>(a.pickedAt||'')<(b.pickedAt||'')?1:-1).slice(0,5).map(r=>`<div class="li"><span class="grow"><b>${esc(r.qty)} × ${esc(r.productName)}</b><span class="muted num">Gebyr ${kr(r.fee)}</span></span><b class="num">${kr(r.total-r.fee)}</b></div>`).join('')}</div></section>`:''}`;
+}
+/* Fanen Udbetaling i Din shop */
+function vPayouts(p){
+  if(p.id===KITCHEN_ID) return `<p class="empty">Isakram-køkkenets salg går direkte til Isakram.</p>`;
+  const res=S.reservations.filter(r=>r.producerId===p.id);
+  const held=res.filter(r=>payState(r)==='authorized'), due=unpaid(p.id);
+  const pays=S.payouts.filter(x=>x.producerId===p.id).sort((a,b)=>a.createdAt<b.createdAt?1:-1);
+  const sum=(a,f)=>a.reduce((s,r)=>s+f(r),0);
+  const dueGross=sum(due,r=>r.total), dueNet=r2(dueGross*(1-FEE));
+  const acct = payoutOk(p) ? `<section class="card stack" style="gap:6px"><div class="between"><h3>Betalingskonto</h3><span class="tag ok">Aktiv</span></div>
+      <span class="muted" style="font-size:14px">${esc(p.payout.holder||p.name)} · Reg. ${esc(p.payout.reg)} · konto ••${esc(p.payout.last4)}</span>
+      <span class="muted" style="font-size:13px">Udbetales hver fredag. Kontoen ligger hos Stripe, og Isakram ser aldrig jeres fulde kontonummer.</span></section>`
+    : `<section class="card stack"><h2>Opret betalingskonto</h2>
+      <p class="muted" style="font-size:14px">Kunderne betaler i appen med MobilePay eller kort. Pengene går direkte til jeres egen konto hos betalingsudbyderen Stripe, og Isakram trækker kun sine 10 %. I får jeres 90 % udbetalt hver fredag.</p>
+      <label class="f">Kontohaver<input class="inp" id="po-holder" value="${esc(p.name)}" autocomplete="off"></label>
+      <div class="grid2"><label class="f">Reg.nr.<input class="inp num" id="po-reg" inputmode="numeric" maxlength="4" placeholder="1234"></label><label class="f">Kontonr.<input class="inp num" id="po-acct" inputmode="numeric" maxlength="10" placeholder="0012345678"></label></div>
+      <label class="row" style="gap:10px;font-size:14px;align-items:flex-start"><input type="checkbox" id="po-id" style="margin-top:3px"><span>Jeg bekræfter, hvem vi er, med MitID Erhverv. <span class="muted">Simuleret i demoen.</span></span></label>
+      <p class="err" id="po-err" hidden></p>
+      <button class="btn block" id="po-save">Opret konto</button>
+      <p class="muted" style="font-size:12.5px">I den rigtige app sker oprettelsen på Stripes egen side, som også tjekker CVR og legitimation.</p></section>`;
+  const tx=[...res.filter(r=>payState(r)!=='released')].sort((a,b)=>(a.createdAt||'')<(b.createdAt||'')?1:-1).slice(0,12);
+  return `
+  <div class="stats"><div class="stat dark"><span>Næste udbetaling</span><b class="num">${krs(dueNet)}</b></div><div class="stat"><span>Reserveret</span><b class="num">${krs(sum(held,r=>r.total*(1-FEE)))}</b></div><div class="stat"><span>Udbetalt i alt</span><b class="num">${krs(sum(pays,x=>x.net))}</b></div></div>
+  <p class="muted" style="font-size:13px;margin:0">${payoutOk(p)?`Næste udbetaling: ${nextPayday()}.`:'Udbetalingen venter, til I har oprettet en betalingskonto.'} "Reserveret" er varer, kunderne endnu ikke har hentet. Beløbet trækkes først ved udlevering.</p>
+  ${acct}
+  <section class="card stack"><div class="between"><h3>Salg</h3><span class="muted" style="font-size:12.5px">Isakrams 10 % står under salget</span></div>
+    ${tx.length?`<table class="ledger"><thead><tr><th>Vare</th><th class="n">Salg</th><th class="n">Til jer</th></tr></thead><tbody>${tx.map(r=>{const st=payState(r);return `<tr><td>${esc(r.qty)} × ${esc(r.productName)}<br><span class="muted" style="font-size:12px">${dateTxt(r.pickedAt||r.createdAt)} · ${st==='authorized'?'reserveret':r.payoutId?'udbetalt':'til udbetaling'} · ${esc(payMethodTxt(r))}</span></td><td class="n">${kr(r.total)}<br><span class="muted" style="font-size:12px">−${kr(r2(r.total*FEE))}</span></td><td class="n"><b>${kr(r2(r.total*(1-FEE)))}</b></td></tr>`}).join('')}</tbody></table>`:`<p class="empty">Intet salg endnu.</p>`}
+  </section>
+  ${pays.length?`<section class="card stack"><h3>Udbetalinger</h3><div class="list">${pays.map(x=>`<div class="li"><span class="grow"><b>${kr(x.net)}</b><span class="muted">${dateTxt(x.createdAt)} · ${x.count} ${x.count===1?'salg':'salg'} · ${esc(x.bank||'')}</span></span><button class="btn small ghost" data-bilag="${esc(x.id)}">Afregning</button></div>`).join('')}</div></section>`:''}`;
+}
+function vBilag(){
+  const x=S.payouts.find(y=>y.id===S.sheet.id); if(!x) return '';
+  const rs=S.reservations.filter(r=>r.payoutId===x.id);
+  return `<div class="scrim" data-scrim><div class="sheet" role="dialog" aria-label="Afregning">
+    <div class="between"><span class="eb">Afregning · ${esc(x.ref||x.id)}</span><button class="close" data-x aria-label="Luk">×</button></div>
+    <h2>${esc(x.producerName)}</h2><span class="muted" style="font-size:14px">Udbetalt ${dateTxt(x.createdAt)} til ${esc(x.bank||'')}</span>
+    <table class="ledger"><thead><tr><th>Vare</th><th class="n">Salg</th></tr></thead><tbody>${rs.map(r=>`<tr><td>${esc(r.qty)} × ${esc(r.productName)}<br><span class="muted" style="font-size:12px">${dateTxt(r.pickedAt)} · kode ${esc(r.code)}</span></td><td class="n">${kr(r.total)}</td></tr>`).join('')}</tbody></table>
+    <div class="stack" style="gap:6px"><div class="payline"><span>Salg i alt</span><b class="num">${kr(x.gross)}</b></div><div class="payline"><span>Isakram, 10 % provision</span><span class="num">−${kr(x.fee)}</span></div>
+    <div class="payline" style="border-top:1px solid var(--line);padding-top:8px;font-size:16px"><b>Udbetalt</b><b class="num">${kr(x.net)}</b></div></div>
+    <p class="muted" style="font-size:12.5px">Betalingsgebyrer betales af Isakram ud af provisionen. Moms på provisionen fremgår af Isakrams faktura. Afregningen kan bruges som bilag i jeres bogføring.</p>
+  </div></div>`;
+}
+/* Isakram: fanen Økonomi */
+function vEconomy(){
+  const ext=S.reservations.filter(r=>r.producerId!==KITCHEN_ID);
+  const by=st=>ext.filter(r=>payState(r)===st), sum=(a,f)=>r2(a.reduce((s,r)=>s+f(r),0));
+  const held=by('authorized'), cap=by('captured'), rel=by('released');
+  const capT=sum(cap,r=>r.total), fee=sum(cap,r=>r.total*FEE), pfee=sum(cap.filter(r=>r.payMethod),payFeeOf);
+  const kitchen=sum(S.reservations.filter(r=>r.producerId===KITCHEN_ID&&payState(r)==='captured'),r=>r.total);
+  const prods=S.producers.filter(p=>p.status==='approved'&&p.id!==KITCHEN_ID).map(p=>({p,due:unpaid(p.id)})).filter(x=>x.due.length||!payoutOk(x.p));
+  const pays=[...S.payouts].sort((a,b)=>a.createdAt<b.createdAt?1:-1).slice(0,8);
+  const anyDue=prods.some(x=>x.due.length&&payoutOk(x.p));
+  return `
+  <div class="stats"><div class="stat dark"><span>Isakram netto</span><b class="num">${krs(fee-pfee+kitchen)}</b></div><div class="stat"><span>Trukket</span><b class="num">${krs(capT)}</b></div><div class="stat"><span>Reserveret</span><b class="num">${krs(sum(held,r=>r.total))}</b></div></div>
+  <section class="card stack" style="gap:8px"><h2>Pengestrømmen</h2>
+    <div class="payline"><span>Kunderne har betalt (trukket ved afhentning)</span><b class="num">${kr(capT)}</b></div>
+    <div class="payline"><span>Til producenterne, 90 %</span><span class="num">${kr(r2(capT-fee))}</span></div>
+    <div class="payline"><span>Isakrams provision, 10 %</span><span class="num">${kr(fee)}</span></div>
+    <div class="payline"><span>Betalingsgebyrer <span class="muted">(eksempel: ${String(PAYFEE.pct*100).replace('.',',')} % + ${kr(PAYFEE.fixed)} pr. betaling)</span></span><span class="num">−${kr(pfee)}</span></div>
+    <div class="payline"><span>Køkkenets eget salg</span><span class="num">${kr(kitchen)}</span></div>
+    <div class="payline" style="border-top:1px solid var(--line);padding-top:8px"><b>Isakram netto</b><b class="num">${kr(r2(fee-pfee+kitchen))}</b></div>
+    <p class="muted" style="font-size:13px;margin:0">Reserveret, men ikke hentet: ${kr(sum(held,r=>r.total))} (${held.length}). Frigivet efter annullering eller udeblivelse: ${kr(sum(rel,r=>r.total))} (${rel.length}). Gebyrsatsen er et eksempel. Ret den til jeres aftale med betalingsudbyderen.</p>
+  </section>
+  <section class="card stack"><div class="between"><h2>Til udbetaling</h2><span class="muted">${nextPayday()}</span></div>
+    ${prods.length?`<div class="list">${prods.map(({p,due})=>{const g=r2(due.reduce((s,r)=>s+r.total,0));return `<div class="li"><span class="grow"><b>${esc(p.name)}</b><span class="muted">${due.length?due.length+' salg · ':''}${payoutOk(p)?'Reg. '+esc(p.payout.reg)+' ••'+esc(p.payout.last4):'mangler betalingskonto'}</span></span>${due.length?`<span class="num" style="text-align:right;font-size:14px;white-space:nowrap"><b>${kr(r2(g*(1-FEE)))}</b><br><span class="muted">af ${kr(g)}</span></span>`:''}${payoutOk(p)?'':'<span class="tag wait">Venter</span>'}</div>`}).join('')}</div>`:`<p class="empty">Intet at udbetale lige nu.</p>`}
+    <button class="btn block" id="po-run" ${anyDue&&!S.busy?'':'disabled'}>Demo: kør fredagens udbetaling nu</button>
+    <p class="muted" style="font-size:12.5px;margin:0">I den rigtige app sker udbetalingen automatisk hos Stripe. Producenter uden betalingskonto får pengene, så snart kontoen er oprettet.</p>
+  </section>
+  ${pays.length?`<section class="card stack"><h3>Seneste udbetalinger</h3><div class="list">${pays.map(x=>`<div class="li"><span class="grow"><b>${esc(x.producerName)}</b><span class="muted">${dateTxt(x.createdAt)} · ${x.count} salg</span></span><span class="num">${kr(x.net)}</span><button class="btn small ghost" data-bilag="${esc(x.id)}">Afregning</button></div>`).join('')}</div></section>`:''}`;
 }
 function statusTag(x){
   if(x.status==='pending') return '<span class="tag wait">Venter</span>';
@@ -674,9 +770,9 @@ const dayLabel = n => n===0?'I dag':n===1?'I morgen':new Date(addDays(n)+'T12:00
 const bbTag = iso => { const dl=daysLeft(iso); if(dl<0) return '<span class="tag last">Overskredet</span>'; if(dl===0) return '<span class="tag last">Brug i dag</span>'; if(dl===1) return '<span class="tag two">I morgen</span>'; return `<span class="tag three">${dl} dage</span>`; };
 
 function vAdmin(){
-  const tabs=[['overblik','Overblik'],['produkter','Produkter'],['koekken','Køkken']];
-  const body = S.atab==='produkter'?vCatalog():S.atab==='koekken'?vKitchen():vAdminOverblik();
-  return `<div class="seg sub" role="tablist" aria-label="Isakram">${tabs.map(([k,t])=>`<button role="tab" data-atab="${k}" aria-pressed="${S.atab===k}">${t}</button>`).join('')}</div>${body}`;
+  const tabs=[['overblik','Overblik'],['produkter','Produkter'],['koekken','Køkken'],['oekonomi','Økonomi']];
+  const body = S.atab==='produkter'?vCatalog():S.atab==='koekken'?vKitchen():S.atab==='oekonomi'?vEconomy():vAdminOverblik();
+  return `<div class="seg sub four" role="tablist" aria-label="Isakram">${tabs.map(([k,t])=>`<button role="tab" data-atab="${k}" aria-pressed="${S.atab===k}">${t}</button>`).join('')}</div>${body}`;
 }
 
 function vAdminOverblik(){
@@ -1021,6 +1117,39 @@ Svar KUN med et JSON-array: [{"recipeId": id fra listen, "why": én kort sætnin
 
 /* ---------- sheet ---------- */
 function stepper(key,max){ const q=S.qty[key]||0; return `<span class="step"><button data-dec="${esc(key)}" aria-label="Færre" ${q<=0?'disabled':''}>−</button><b class="num" style="min-width:16px;text-align:center">${q}</b><button data-inc="${esc(key)}" data-max="${max}" aria-label="Flere" ${q>=max?'disabled':''}>+</button></span>`; }
+function cartOf(p){
+  const items = live().filter(l=>l.producerId===p.id && (S.qty['l:'+l.id]||0)>0).map(l=>({name:l.name+(l.unit?', '+l.unit:''),q:S.qty['l:'+l.id],price:unitPrice(l),offer:true}));
+  const prods = shelf().filter(x=>x.producerId===p.id && (S.qty['p:'+x.id]||0)>0).map(x=>({name:x.name+(x.unit?', '+x.unit:''),q:S.qty['p:'+x.id],price:x.price}));
+  const lines=[...items,...prods]; return {lines, n:lines.reduce((s,a)=>s+a.q,0), t:r2(lines.reduce((s,a)=>s+a.q*a.price,0))};
+}
+function vPay(){
+  const ps=S.sheet, p=prodById(ps.pid); if(!p) return '';
+  const {lines,n,t}=cartOf(p); const m=ps.method||'mobilepay';
+  const head=`<div class="between"><button class="linkbtn" data-payback>‹ Tilbage</button><button class="close" data-x aria-label="Luk">×</button></div>`;
+  const summary=`<div class="card stack" style="gap:8px"><span class="eb">${esc(p.name)}</span>${lines.map(a=>`<div class="payline"><span>${a.q} × ${esc(a.name)}</span><b class="num">${kr(a.q*a.price)}</b></div>`).join('')}
+    <div class="payline" style="border-top:1px solid var(--line);padding-top:8px;font-size:16px"><b>I alt</b><b class="num">${kr(t)}</b></div></div>`;
+  let body='';
+  if(ps.step==='approve') body=`<div class="mpbox" role="group" aria-label="MobilePay, simuleret">
+      <span style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5A78FF">MobilePay · simuleret</span>
+      <span style="font-size:15px">Godkend betaling til<br><b>${esc(p.name)} via Isakram</b></span>
+      <span class="amt num">${kr(t)}</span>
+      <span style="font-size:13px;color:#555">Beløbet reserveres nu og trækkes ved afhentning.</span>
+      <button class="mpbtn" style="background:#5A78FF;color:#fff" data-payok>Godkend</button>
+      <button class="mpbtn" style="background:#eef0f5;color:#14161a" data-paycancel>Afvis</button></div>
+      <p class="muted" style="font-size:13px;text-align:center">I den rigtige app åbner MobilePay-appen her.</p>`;
+  else if(ps.step==='card') body=`<div class="card stack"><span class="eb">Kort · testkort i demoen</span>
+      <label class="f">Kortnummer<input class="inp num" value="4242 4242 4242 4242" readonly></label>
+      <div class="grid2"><label class="f">Udløb<input class="inp num" value="12 / 28" readonly></label><label class="f">CVC<input class="inp num" value="123" readonly></label></div>
+      <p class="muted" style="font-size:13px">Visa, Mastercard og Dankort med Visa-logo. Beløbet reserveres nu og trækkes ved afhentning.</p>
+      <button class="btn block" data-payok style="justify-content:space-between"><span>Godkend</span><span class="num">${kr(t)}</span></button></div>`;
+  else if(ps.step==='busy') body=`<div class="card stack" style="align-items:center;text-align:center;padding:28px"><span class="recbusy"><i></i>Reserverer ${kr(t)} …</span></div>`;
+  else body=`<div class="stack" style="gap:8px" role="radiogroup" aria-label="Betalingsmetode">
+      <button class="paym" role="radio" data-paym="mobilepay" aria-pressed="${m==='mobilepay'}"><span class="pm mp">MP</span><span class="stack" style="gap:1px"><b>MobilePay</b><span class="muted" style="font-size:13px">Godkend i appen</span></span><span class="dot"></span></button>
+      <button class="paym" role="radio" data-paym="card" aria-pressed="${m==='card'}"><span class="pm cd">KORT</span><span class="stack" style="gap:1px"><b>Betalingskort</b><span class="muted" style="font-size:13px">Visa, Mastercard</span></span><span class="dot"></span></button></div>
+    <p class="banner" style="margin:0;font-size:14px">Beløbet reserveres nu og trækkes først, når du henter varerne. Henter du dem ikke, frigives beløbet igen.</p>
+    <button class="btn block" data-paygo ${n&&S.me?'':'disabled'} style="justify-content:space-between"><span>Betal med ${m==='card'?'kort':'MobilePay'}</span><span class="num">${kr(t)}</span></button>`;
+  return `<div class="scrim" data-scrim><div class="sheet" role="dialog" aria-label="Betaling">${head}<h2>Betaling</h2>${summary}${body}</div></div>`;
+}
 function vSheet(){
   if(!S.sheet) return '';
   if(S.sheet.type==='done'){ const rs=S.sheet.res; const t=rs.reduce((s,r)=>s+r.total,0), n=rs.reduce((s,r)=>s+r.qty,0); return `<div class="scrim" data-scrim><div class="sheet" role="dialog" aria-label="Reserveret" style="background:var(--ink);color:var(--on-ink)">
@@ -1029,8 +1158,10 @@ function vSheet(){
     <div class="card stack" style="color:var(--ink)"><div class="between"><span class="eb">Afhentningskode</span><span class="code num">${esc(rs[0].code)}</span></div>
     ${rs.map(r=>`<div class="between"><span>${esc(r.qty)} × ${esc(r.productName)}</span><b class="num">${kr(r.total)}</b></div>`).join('')}
     <div class="between" style="border-top:1px solid var(--line);padding-top:10px"><b>I alt</b><b class="num">${kr(t)}</b></div>
-    <p class="muted" style="font-size:13px">Betal ved afhentning i denne demo. Kortbetaling kommer i næste version.</p></div>
+    <p class="muted" style="font-size:13px">${rs[0].payMethod?`${esc(payMethodTxt(rs[0]))}: ${kr(t)} er reserveret på din konto og trækkes først, når du henter varerne. Henter du dem ikke, frigives beløbet.`:'Betal ved afhentning.'}</p></div>
     ${rs.some(r=>r.kind==='kortdato')?`<p style="font-family:var(--display);font-size:18px;opacity:.75">Varer, der ikke blev til affald. Tak.</p>`:`<p style="font-family:var(--display);font-size:18px;opacity:.75">Købt lokalt. Tak.</p>`}</div></div>`; }
+  if(S.sheet.type==='pay') return vPay();
+  if(S.sheet.type==='bilag') return vBilag();
   const p = prodById(S.sheet.pid); if(!p) return '';
   const items = live().filter(l=>l.producerId===p.id).sort((a,b)=>daysLeft(a.expires)-daysLeft(b.expires));
   const prods = shelf().filter(x=>x.producerId===p.id);
@@ -1045,7 +1176,7 @@ function vSheet(){
       <div class="between"><span class="price num"><b>${kr(unitPrice(l))}</b><s>${kr(l.normalPrice)}</s><span style="font-size:13px;font-weight:700;color:var(--red-ink)">−${Math.round(discount(dl)*100)} %</span></span>${stepper('l:'+l.id,l.qty)}</div></div>`}).join(''):''}
     ${prods.length?`<span class="eb">Fast sortiment</span><div class="card list" style="padding:4px 12px">`+prods.map(x=>`<div class="li">${thumb(x,48)}<span class="grow"><b>${esc(x.name)}</b><span class="muted num">${esc(x.unit||'')} · ${kr(x.price)}</span></span>${stepper('p:'+x.id,x.stock)}</div>`).join('')+`</div>`:''}
     ${!items.length&&!prods.length?`<p class="empty">Alt er solgt her lige nu.</p>`:''}
-    <button class="btn block" id="reserve" ${n&&!S.busy&&S.me?'':'disabled'} style="justify-content:space-between"><span>${n?`Reservér ${n} ${n===1?'vare':'varer'}`:'Vælg varer'}</span><span class="num">${n?kr(t):''}</span></button>
+    <button class="btn block" id="topay" ${n&&!S.busy&&S.me?'':'disabled'} style="justify-content:space-between"><span>${n?`Til betaling · ${n} ${n===1?'vare':'varer'}`:'Vælg varer'}</span><span class="num">${n?kr(t):''}</span></button>
     ${S.me?'':'<p class="muted" style="font-size:13px">Log ind på claude.ai for at reservere.</p>'}
   </div></div>`;
 }
@@ -1064,40 +1195,76 @@ function render(){
   updateNet();
   placeMaps();
   $('#sheet-root').innerHTML = vSheet();
+  const sk = S.sheet ? S.sheet.type+'|'+(S.sheet.pid||S.sheet.id||'') : '';
+  if(sk && sk===S._sk){ const sh=$('#sheet-root .sheet'); if(sh) sh.style.animation='none'; }
+  S._sk=sk;
 }
 function updateNet(){ const o=$('#p-net'); if(!o) return; const v=num('p-price'); o.textContent = v>0 ? kr(v*(1-FEE)) : '–'; }
 
 /* ---------- actions ---------- */
-async function reserve(){
+async function reserve(method){
   const p = prodById(S.sheet.pid);
   if(!S.me) return;
   const wantL = live().filter(l=>l.producerId===p.id && (S.qty['l:'+l.id]||0)>0);
   const wantP = shelf().filter(x=>x.producerId===p.id && (S.qty['p:'+x.id]||0)>0);
   if(!wantL.length && !wantP.length) return;
   S.busy=true; render();
-  const c = code(), made=[];
+  const c = code(), made=[], payRef='pi_demo_'+Math.random().toString(36).slice(2,10), payNow=new Date().toISOString();
+  const pay = () => method ? {payMethod:method, payStatus:'authorized', payRef, authorizedAt:payNow, payFixed:made.length===0} : {};
   try{
     for(const l of wantL){
       const cur=(await db.doc('listings/'+l.id).get()).data(); const q=Math.min(S.qty['l:'+l.id], cur?.qty||0); if(q<=0) continue;
       await db.doc('listings/'+l.id).update({qty:cur.qty-q});
       const price=unitPrice(cur), total=r2(q*price);
-      const r={kind:'kortdato',listingId:l.id,producerId:p.id,producerName:p.name,productName:l.name+(l.unit?', '+l.unit:''),qty:q,unitPrice:price,total,fee:r2(total*FEE),code:c,userId:S.me,status:'reserved',createdAt:new Date().toISOString()};
+      const r={kind:'kortdato',listingId:l.id,producerId:p.id,producerName:p.name,productName:l.name+(l.unit?', '+l.unit:''),qty:q,unitPrice:price,total,fee:r2(total*FEE),code:c,userId:S.me,status:'reserved',createdAt:new Date().toISOString(),...pay()};
       await db.collection('reservations').add(r); made.push(r);
     }
     for(const x of wantP){
       const cur=(await db.doc('products/'+x.id).get()).data(); const q=Math.min(S.qty['p:'+x.id], cur?.stock||0); if(q<=0) continue;
       await db.doc('products/'+x.id).update({stock:cur.stock-q});
       const total=r2(q*cur.price);
-      const r={kind:'fast',productId:x.id,producerId:p.id,producerName:p.name,productName:x.name+(x.unit?', '+x.unit:''),qty:q,unitPrice:cur.price,total,fee:r2(total*FEE),code:c,userId:S.me,status:'reserved',createdAt:new Date().toISOString()};
+      const r={kind:'fast',productId:x.id,producerId:p.id,producerName:p.name,productName:x.name+(x.unit?', '+x.unit:''),qty:q,unitPrice:cur.price,total,fee:r2(total*FEE),code:c,userId:S.me,status:'reserved',createdAt:new Date().toISOString(),...pay()};
       await db.collection('reservations').add(r); made.push(r);
     }
     S.qty={}; S.busy=false;
     S.sheet = made.length ? {type:'done',res:made} : null;
     if(!made.length) toast('Varerne blev reserveret af en anden lige før dig.');
-  }catch(e){ S.busy=false; toast(e.code==='invalid_argument'?'Du har ikke adgang til at reservere i denne visning.':'Reservationen gik ikke igennem. Prøv igen.'); }
+  }catch(e){ S.busy=false; if(S.sheet&&S.sheet.type==='pay') S.sheet.step='choose'; toast(e.code==='invalid_argument'?'Du har ikke adgang til at reservere i denne visning.':'Reservationen gik ikke igennem. Intet er trukket. Prøv igen.'); }
   render();
 }
 
+async function releaseRes(id, status){
+  const r=S.reservations.find(x=>x.id===id); if(!r) return;
+  await db.doc('reservations/'+id).update({status, payStatus:r.payMethod?'released':null, releasedAt:new Date().toISOString()});
+  try{
+    if(r.listingId){ const ref=db.doc('listings/'+r.listingId); const cur=(await ref.get()).data(); if(cur) await ref.update({qty:(cur.qty||0)+r.qty, status:cur.status==='removed'?cur.status:'live'}); }
+    else if(r.productId){ const ref=db.doc('products/'+r.productId); const cur=(await ref.get()).data(); if(cur) await ref.update({stock:(cur.stock||0)+r.qty}); }
+  }catch(_){}
+}
+async function savePayout(){
+  const p=myProducer(), err=$('#po-err'); if(!p) return;
+  const holder=val('po-holder'), reg=val('po-reg').replace(/\D/g,''), acct=val('po-acct').replace(/\D/g,'');
+  let msg='';
+  if(!holder) msg='Skriv kontohaverens navn.'; else if(!/^\d{4}$/.test(reg)) msg='Reg.nr. er 4 cifre.'; else if(!/^\d{6,10}$/.test(acct)) msg='Kontonummeret er 6–10 cifre.'; else if(!$('#po-id').checked) msg='Bekræft med MitID Erhverv.';
+  if(msg){ err.textContent=msg; err.hidden=false; return; }
+  // Kun reg.nr. og de sidste 4 cifre gemmes. Det fulde kontonummer ligger hos Stripe i den rigtige app.
+  await db.doc('producers/'+p.id).update({payout:{status:'active', provider:'Stripe (demo)', holder, reg, last4:acct.slice(-4), createdAt:new Date().toISOString()}});
+  toast('Betalingskontoen er oprettet');
+}
+async function runPayouts(){
+  S.busy=true; render(); let n=0;
+  try{
+    for(const p of S.producers.filter(payoutOk)){
+      const due=unpaid(p.id); if(!due.length) continue;
+      const gross=r2(due.reduce((s,r)=>s+r.total,0)), fee=r2(gross*FEE);
+      const ref=await db.collection('payouts').add({producerId:p.id, producerName:p.name, gross, fee, net:r2(gross-fee), count:due.length, bank:'Reg. '+p.payout.reg+' ••'+p.payout.last4, ref:'po_demo_'+Math.random().toString(36).slice(2,8), createdAt:new Date().toISOString()});
+      for(const r of due) await db.doc('reservations/'+r.id).update({payoutId:ref.id});
+      n++;
+    }
+    toast(n?`Udbetalt til ${n} ${n===1?'producent':'producenter'}`:'Intet at udbetale');
+  }catch(e){ toast('Udbetalingen gik ikke igennem.'); }
+  S.busy=false; render();
+}
 async function saveProduct(){
   const p=myProducer(), err=$('#p-err');
   const name=val('p-name'), price=num('p-price'), stock=parseInt(val('p-stock'),10);
@@ -1230,6 +1397,12 @@ document.addEventListener('click', async e=>{
   if(d.inc){ S.qty[d.inc]=Math.min(+d.max,(S.qty[d.inc]||0)+1); render(); return; }
   if(d.dec){ S.qty[d.dec]=Math.max(0,(S.qty[d.dec]||0)-1); render(); return; }
   if(d.ptab){ S.ptab=d.ptab; render(); return; }
+  if(d.paym){ S.sheet.method=d.paym; render(); return; }
+  if(d.payback!==undefined){ if(S.sheet.step&&S.sheet.step!=='choose'){ S.sheet.step='choose'; } else S.sheet={type:'producer',pid:S.sheet.pid}; render(); return; }
+  if(d.paygo!==undefined){ S.sheet.step = (S.sheet.method||'mobilepay')==='card' ? 'card' : 'approve'; render(); return; }
+  if(d.paycancel!==undefined){ S.sheet.step='choose'; toast('Betalingen blev afvist. Intet er trukket.'); render(); return; }
+  if(d.payok!==undefined){ const m=S.sheet.method||'mobilepay'; S.sheet.step='busy'; render(); setTimeout(()=>reserve(m),700); return; }
+  if(d.bilag){ S.sheet={type:'bilag',id:d.bilag}; render(); return; }
   if(d.shelf){ S.shelf=d.shelf; render(); return; }
   if(d.cat){ S.cat=d.cat; render(); return; }
   if(d.exp!==undefined){ S.exp=+d.exp; render(); return; }
@@ -1264,6 +1437,9 @@ document.addEventListener('click', async e=>{
   if(d.tokd){ S.fromProduct=d.tokd; S.ptab='kortdato'; S._prefill=true; render(); return; }
   switch(t.id){
     case 'reserve': reserve(); return;
+    case 'topay': if(S.sheet&&S.sheet.pid) S.sheet={type:'pay',pid:S.sheet.pid,method:'mobilepay',step:'choose'}; render(); return;
+    case 'po-save': savePayout(); return;
+    case 'po-run': runPayouts(); return;
     case 'f-last': S.onlyLast=!S.onlyLast; render(); return;
     case 's-send': signup(); return;
     case 'l-add': addListing(); return;
@@ -1274,7 +1450,9 @@ document.addEventListener('click', async e=>{
     case 'b-save': saveBatch(); return;
   }
   try{
-    if(d.pick){ await db.doc('reservations/'+d.pick).update({status:'picked', pickedAt:new Date().toISOString()}); toast('Markeret som udleveret'); }
+    if(d.pick){ const r=S.reservations.find(x=>x.id===d.pick); const up={status:'picked', pickedAt:new Date().toISOString()}; if(r&&r.payMethod){ up.payStatus='captured'; up.capturedAt=up.pickedAt; up.payFee=payFeeOf(r); } await db.doc('reservations/'+d.pick).update(up); toast(r&&r.payMethod?`Udleveret. ${kr(r.total)} er trukket.`:'Markeret som udleveret'); }
+    else if(d.noshow){ await releaseRes(d.noshow,'noshow'); toast('Markeret som ikke hentet. Beløbet er frigivet, og varen er tilbage på hylden.'); }
+    else if(d.rcancel){ const r=S.reservations.find(x=>x.id===d.rcancel); if(r) for(const x of S.reservations.filter(y=>y.code===r.code&&y.userId===S.me&&y.status==='reserved')) await releaseRes(x.id,'cancelled'); toast('Reservationen er annulleret, og beløbet er frigivet.'); }
     else if(d.del){ await db.doc('listings/'+d.del).update({status:'removed'}); toast('Fjernet fra kortet'); }
     else if(d.mycat||d.myprim){ const p=myProducer(); if(!p) return; let cs=catsOf(p), prim=catOf(p);
       if(d.mycat){ cs=cs.includes(d.mycat)?cs.filter(x=>x!==d.mycat):[...cs,d.mycat]; if(!cs.length){ toast('Vælg mindst én kategori'); return; } if(!cs.includes(prim)) prim=cs[0]; } else prim=d.myprim;
@@ -1317,7 +1495,7 @@ render();
   if(!db){ showNotice('Databasen er ikke tilgængelig i denne visning. Log ind på claude.ai for at bruge appen.'); S.ready=true; render(); return; }
   if(user){ S.me = await user.id(); const adm = await user.canEdit(); if(!adm){ $('#r-admin').hidden=true; if(S.role==='admin'){ S.role='kunde'; render(); } } }
   const sub = (col,key) => db.collection(col).onSnapshot(s=>{ S[key]=s.docs.map(d=>({id:d.id,...d.data()})); S.ready=true; render(); }, ()=>showNotice('Forbindelsen til databasen blev afbrudt. Genindlæs siden.'));
-  sub('producers','producers'); sub('listings','listings'); sub('products','products'); sub('reservations','reservations'); sub('pantry','pantry'); sub('batches','batches'); sub('books','books'); sub('recipes','recipes');
+  sub('producers','producers'); sub('listings','listings'); sub('products','products'); sub('reservations','reservations'); sub('pantry','pantry'); sub('batches','batches'); sub('books','books'); sub('recipes','recipes'); sub('payouts','payouts');
 })();
 function showNotice(t){ const n=$('#notice'); n.textContent=t; n.hidden=false; }
 })();
