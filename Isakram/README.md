@@ -43,7 +43,7 @@ Isakram tager 10 % af salgsprisen. Producenten får 90 %, og der er intet oprett
 1. Læg filerne fra `web/` i samme mappe som hjemmesidens `index.html`.
 2. Tilføj denne linje i `index.html` lige før `</body>`:
    ```html
-   <script src="fodevarecentralen-sektion.js?v=8"></script>
+   <script src="fodevarecentralen-sektion.js?v=9"></script>
    ```
    Hæv tallet, hver gang appen opdateres, så browsere henter den nye version. Tallet i `APP_URL` øverst i `fodevarecentralen-sektion.js` skal også hæves.
 3. Billedgenkendelse (valgfri, kræver PHP med curl):

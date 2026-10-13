@@ -247,6 +247,17 @@ const PAYFEE = {pct:0.015, fixed:1.80};   // EKSEMPEL på betalingsgebyr pr. bet
 const PAYM = {mobilepay:'MobilePay', card:'Kort'};
 const payState = r => r.payStatus || (r.status==='picked'?'captured':r.status==='reserved'?'authorized':'released');
 const payFeeOf = r => r.payFee!=null ? r.payFee : r2(r.total*PAYFEE.pct + (r.payFixed===false?0:PAYFEE.fixed));
+/* To afregningsmodeller. Hver reservation gemmer, hvilken model og andel den blev solgt under. */
+const MODELS = {
+  direct:{key:'direct', name:'Direkte betaling', short:'90/10', share:0.10, cadence:'Hver fredag', blurb:'I får 90 % udbetalt hver fredag til jeres egen Stripe-konto.', seller:'Producenten (Isakram formidler)', account:'Egen Stripe-konto'},
+  konto:{key:'konto', name:'Kontoafregning', short:'50/50', share:0.50, cadence:'Den 1. i måneden', blurb:'Isakram sælger og står for kunden. I får 50 % overført den 1. i måneden.', seller:'Isakram', account:'Konto hos Isakram'}
+};
+const modelOf = p => MODELS[p&&p.settle] || MODELS.direct;
+const shareOf = r => r.share!=null ? r.share : FEE;
+const isakOf = r => r2(r.total*shareOf(r));
+const prodOf = r => r2(r.total-isakOf(r));
+const splitTxt = r => `${Math.round((1-shareOf(r))*100)}/${Math.round(shareOf(r)*100)}`;
+function nextSettle(m){ if(m.key==='konto'){ const d=new Date(); d.setMonth(d.getMonth()+1,1); return d.toLocaleDateString('da-DK',{weekday:'long',day:'numeric',month:'long'}); } return nextPayday(); }
 const payoutOk = p => !!(p && p.payout && p.payout.status==='active');
 const payMethodTxt = r => r.payMethod ? PAYM[r.payMethod]||r.payMethod : 'Betaling ved afhentning';
 function nextPayday(){ const d=new Date(); const add=(5-d.getDay()+7)%7||7; d.setDate(d.getDate()+add); return d.toLocaleDateString('da-DK',{weekday:'long',day:'numeric',month:'long'}); }
@@ -463,9 +474,10 @@ function vSignup(){
         <div class="row" style="gap:12px"><span class="cic big">${catSvg(su.cat,26)}</span><div class="stack" style="gap:2px"><b style="font-size:17px">${esc(su.name)}</b><span class="muted" style="font-size:13px">${su.cats.map(esc).join(' · ')} · ${esc(su.address)}${su.town?', '+esc(su.town):''}</span></div></div>
         <span class="muted" style="font-size:13px">${su.cvr?'CVR '+esc(su.cvr)+' · ':''}Telefon ${esc(su.phone)} ✓</span>
       </div>
-      <div class="stack" style="gap:8px"><div class="split"><span></span><span></span></div><div class="between muted" style="font-size:13px"><span>Kunden betaler 100 kr.</span><span>Isakram 10 kr. · I får 90 kr.</span></div></div>
+      <div class="stack" style="gap:8px"><span class="lbl">Afregningsmodel</span>${Object.values(MODELS).map(x=>`<button class="paym" role="radio" data-sumodel="${x.key}" aria-pressed="${(su.settle||'direct')===x.key}"><span class="pm ${x.key==='konto'?'cd':'mp'}" style="${x.key==='konto'?'':'background:var(--ink)'}">${x.short}</span><span class="stack" style="gap:1px"><b>${x.name}</b><span class="muted" style="font-size:13px">${x.blurb}</span></span><span class="dot"></span></button>`).join('')}</div>
+      <div class="stack" style="gap:8px"><div class="split"><span style="flex:${Math.round((1-MODELS[su.settle||'direct'].share)*100)} 1 0"></span><span style="flex:${Math.round(MODELS[su.settle||'direct'].share*100)} 1 0"></span></div><div class="between muted" style="font-size:13px"><span>Kunden betaler 100 kr.</span><span>Isakram ${Math.round(MODELS[su.settle||'direct'].share*100)} kr. · I får ${Math.round((1-MODELS[su.settle||'direct'].share)*100)} kr.</span></div></div>
       <p class="muted" style="font-size:14px">Intet oprettelsesgebyr og intet abonnement. Isakram godkender alle producenter, før de kommer på kortet.</p>
-      <label class="row" style="font-size:14px"><input type="checkbox" id="s-accept" ${su.accept?'checked':''} style="width:22px;height:22px;accent-color:var(--ink)"> Jeg accepterer producentaftalen og 10 % af salgsprisen.</label>
+      <label class="row" style="font-size:14px"><input type="checkbox" id="s-accept" ${su.accept?'checked':''} style="width:22px;height:22px;accent-color:var(--ink)"> Jeg accepterer producentaftalen og den valgte afregningsmodel.</label>
       ${nav('id="s-send"','Send ansøgning')}`;
   }
   return `<section class="card stack"><span class="eb">Bliv producent · trin ${su.step} af 5</span>${bar}${err}${body}</section>`;
@@ -516,7 +528,7 @@ async function signup(){
   if(!su.accept) return suErr('Sæt flueben ved producentaftalen.');
   if(!S.me) return suErr('Log ind for at sende ansøgningen.');
   try{
-    await db.collection('producers').add({name:su.name, category:su.cat, categories:su.cats.slice(), cvr:su.cvr||'', cvrFound:!!su.co, branche:su.co?su.co.branche:'', brancheTxt:su.co?su.co.brancheTxt:'',
+    await db.collection('producers').add({name:su.name, category:su.cat, categories:su.cats.slice(), settle:su.settle||'direct', cvr:su.cvr||'', cvrFound:!!su.co, branche:su.co?su.co.branche:'', brancheTxt:su.co?su.co.brancheTxt:'',
       phone:su.phone, phoneVerified:true, phoneMatchesCvr:su.cvrMatch, town:su.town, story:su.story, address:su.address,
       lat:S.pin.lat, lng:S.pin.lng, status:'pending', ownerId:S.me, createdAt:new Date().toISOString()});
     S.acting=null; S.pin=null; S.su=suNew(); maps.pick&&maps.pick.clear(); toast('Ansøgning sendt');
@@ -617,7 +629,7 @@ function vOverblik(p){
   const waiting = prods.filter(x=>x.status==='pending').length;
   const low = prods.filter(x=>x.status==='approved' && x.stock<=2);
   return `
-  <div class="stats"><div class="stat dark"><span>Solgt</span><b class="num">${kr(sold)}</b></div><div class="stat"><span>Til jer, 90 %</span><b class="num">${kr(sold*(1-FEE))}</b></div><div class="stat"><span>Reddet</span><b class="num">${saved} stk.</b></div></div>
+  <div class="stats"><div class="stat dark"><span>Solgt</span><b class="num">${kr(sold)}</b></div><div class="stat"><span>Til jer</span><b class="num">${krs(picked.reduce((s,r)=>s+prodOf(r),0))}</b></div><div class="stat"><span>Reddet</span><b class="num">${saved} stk.</b></div></div>
   ${!payoutOk(p)&&p.id!==KITCHEN_ID?`<p class="banner" style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span>Opret en betalingskonto, så I kan få jeres penge udbetalt.</span><button class="btn small" data-ptab="udbetal">Opret</button></p>`:''}
   ${waiting?`<p class="banner">${waiting} ${waiting===1?'produkt venter':'produkter venter'} på Isakrams godkendelse.</p>`:''}
   ${low.length?`<p class="banner" style="background:var(--card);border:1px solid var(--line)">Næsten udsolgt: ${low.map(x=>esc(x.name)+' ('+x.stock+')').join(', ')}.</p>`:''}
@@ -634,42 +646,47 @@ function vOverblik(p){
 /* Fanen Udbetaling i Din shop */
 function vPayouts(p){
   if(p.id===KITCHEN_ID) return `<p class="empty">Isakram-køkkenets salg går direkte til Isakram.</p>`;
+  const m=modelOf(p), konto=m.key==='konto';
   const res=S.reservations.filter(r=>r.producerId===p.id);
   const held=res.filter(r=>payState(r)==='authorized'), due=unpaid(p.id);
   const pays=S.payouts.filter(x=>x.producerId===p.id).sort((a,b)=>a.createdAt<b.createdAt?1:-1);
-  const sum=(a,f)=>a.reduce((s,r)=>s+f(r),0);
-  const dueGross=sum(due,r=>r.total), dueNet=r2(dueGross*(1-FEE));
-  const acct = payoutOk(p) ? `<section class="card stack" style="gap:6px"><div class="between"><h3>Betalingskonto</h3><span class="tag ok">Aktiv</span></div>
+  const sum=(a,f)=>r2(a.reduce((s,r)=>s+f(r),0));
+  const choose = `<section class="card stack"><div class="between"><h3>Afregningsmodel</h3><span class="muted" style="font-size:12.5px">Gælder nye salg</span></div>
+    <div class="stack" style="gap:8px" role="radiogroup" aria-label="Afregningsmodel">${Object.values(MODELS).map(x=>`<button class="paym" role="radio" data-settle="${x.key}" aria-pressed="${m.key===x.key}"><span class="pm ${x.key==='konto'?'cd':'mp'}" style="${x.key==='konto'?'':'background:var(--ink)'}">${x.short}</span><span class="stack" style="gap:1px"><b>${x.name}</b><span class="muted" style="font-size:13px">${x.blurb}</span></span><span class="dot"></span></button>`).join('')}</div>
+    <p class="muted" style="font-size:12.5px;margin:0">Salg, der allerede er sket, afregnes efter den model, de blev solgt under. I den rigtige app aftales et skift med Isakram.</p></section>`;
+  const acct = payoutOk(p) ? `<section class="card stack" style="gap:6px"><div class="between"><h3>${konto?'Konto til afregning':'Betalingskonto'}</h3><span class="tag ok">Aktiv</span></div>
       <span class="muted" style="font-size:14px">${esc(p.payout.holder||p.name)} · Reg. ${esc(p.payout.reg)} · konto ••${esc(p.payout.last4)}</span>
-      <span class="muted" style="font-size:13px">Udbetales hver fredag. Kontoen ligger hos Stripe, og Isakram ser aldrig jeres fulde kontonummer.</span></section>`
-    : `<section class="card stack"><h2>Opret betalingskonto</h2>
-      <p class="muted" style="font-size:14px">Kunderne betaler i appen med MobilePay eller kort. Pengene går direkte til jeres egen konto hos betalingsudbyderen Stripe, og Isakram trækker kun sine 10 %. I får jeres 90 % udbetalt hver fredag.</p>
+      <span class="muted" style="font-size:13px">${konto?'Isakram overfører jeres andel hertil den 1. i hver måned.':'Udbetales hver fredag. Kontoen ligger hos Stripe, og Isakram ser aldrig jeres fulde kontonummer.'}</span></section>`
+    : `<section class="card stack"><h2>${konto?'Tilføj konto til afregning':'Opret betalingskonto'}</h2>
+      <p class="muted" style="font-size:14px">${konto?'Kunderne betaler Isakram. Jeres andel på 50 % samles på jeres konto hos Isakram og overføres til jeres bankkonto den 1. i hver måned.':'Kunderne betaler i appen med MobilePay eller kort. Pengene går direkte til jeres egen konto hos betalingsudbyderen Stripe, og Isakram trækker kun sine 10 %. I får jeres 90 % udbetalt hver fredag.'}</p>
       <label class="f">Kontohaver<input class="inp" id="po-holder" value="${esc(p.name)}" autocomplete="off"></label>
       <div class="grid2"><label class="f">Reg.nr.<input class="inp num" id="po-reg" inputmode="numeric" maxlength="4" placeholder="1234"></label><label class="f">Kontonr.<input class="inp num" id="po-acct" inputmode="numeric" maxlength="10" placeholder="0012345678"></label></div>
-      <label class="row" style="gap:10px;font-size:14px;align-items:flex-start"><input type="checkbox" id="po-id" style="margin-top:3px"><span>Jeg bekræfter, hvem vi er, med MitID Erhverv. <span class="muted">Simuleret i demoen.</span></span></label>
+      <label class="row" style="gap:10px;font-size:14px;align-items:flex-start"><input type="checkbox" id="po-id" style="margin-top:3px"><span>Jeg bekræfter med MitID Erhverv, at kontoen tilhører virksomheden. <span class="muted">Simuleret i demoen.</span></span></label>
       <p class="err" id="po-err" hidden></p>
-      <button class="btn block" id="po-save">Opret konto</button>
-      <p class="muted" style="font-size:12.5px">I den rigtige app sker oprettelsen på Stripes egen side, som også tjekker CVR og legitimation.</p></section>`;
-  const tx=[...res.filter(r=>payState(r)!=='released')].sort((a,b)=>(a.createdAt||'')<(b.createdAt||'')?1:-1).slice(0,12);
+      <button class="btn block" id="po-save">${konto?'Gem konto':'Opret konto'}</button>
+      <p class="muted" style="font-size:12.5px">${konto?'Kun reg.nr. og de sidste fire cifre vises i appen.':'I den rigtige app sker oprettelsen på Stripes egen side, som også tjekker CVR og legitimation.'}</p></section>`;
+  const tx=res.filter(r=>payState(r)!=='released').sort((a,b)=>(a.createdAt||'')<(b.createdAt||'')?1:-1).slice(0,12);
   return `
-  <div class="stats"><div class="stat dark"><span>Næste udbetaling</span><b class="num">${krs(dueNet)}</b></div><div class="stat"><span>Reserveret</span><b class="num">${krs(sum(held,r=>r.total*(1-FEE)))}</b></div><div class="stat"><span>Udbetalt i alt</span><b class="num">${krs(sum(pays,x=>x.net))}</b></div></div>
-  <p class="muted" style="font-size:13px;margin:0">${payoutOk(p)?`Næste udbetaling: ${nextPayday()}.`:'Udbetalingen venter, til I har oprettet en betalingskonto.'} "Reserveret" er varer, kunderne endnu ikke har hentet. Beløbet trækkes først ved udlevering.</p>
+  <div class="stats"><div class="stat dark"><span>${konto?'Saldo på kontoen':'Næste udbetaling'}</span><b class="num">${krs(sum(due,prodOf))}</b></div><div class="stat"><span>Reserveret</span><b class="num">${krs(sum(held,prodOf))}</b></div><div class="stat"><span>Udbetalt i alt</span><b class="num">${krs(sum(pays,x=>x.net))}</b></div></div>
+  <p class="muted" style="font-size:13px;margin:0">${payoutOk(p)?`${konto?'Næste overførsel':'Næste udbetaling'}: ${nextSettle(m)}.`:'Udbetalingen venter, til I har tilføjet en konto.'} "Reserveret" er varer, kunderne endnu ikke har hentet. Beløbet trækkes først ved udlevering.</p>
+  ${choose}
   ${acct}
-  <section class="card stack"><div class="between"><h3>Salg</h3><span class="muted" style="font-size:12.5px">Isakrams 10 % står under salget</span></div>
-    ${tx.length?`<table class="ledger"><thead><tr><th>Vare</th><th class="n">Salg</th><th class="n">Til jer</th></tr></thead><tbody>${tx.map(r=>{const st=payState(r);return `<tr><td>${esc(r.qty)} × ${esc(r.productName)}<br><span class="muted" style="font-size:12px">${dateTxt(r.pickedAt||r.createdAt)} · ${st==='authorized'?'reserveret':r.payoutId?'udbetalt':'til udbetaling'} · ${esc(payMethodTxt(r))}</span></td><td class="n">${kr(r.total)}<br><span class="muted" style="font-size:12px">−${kr(r2(r.total*FEE))}</span></td><td class="n"><b>${kr(r2(r.total*(1-FEE)))}</b></td></tr>`}).join('')}</tbody></table>`:`<p class="empty">Intet salg endnu.</p>`}
+  <section class="card stack"><div class="between"><h3>Salg</h3><span class="muted" style="font-size:12.5px">Isakrams andel står under salget</span></div>
+    ${tx.length?`<table class="ledger"><thead><tr><th>Vare</th><th class="n">Salg</th><th class="n">Til jer</th></tr></thead><tbody>${tx.map(r=>{const st=payState(r);return `<tr><td>${esc(r.qty)} × ${esc(r.productName)}<br><span class="muted" style="font-size:12px">${dateTxt(r.pickedAt||r.createdAt)} · ${st==='authorized'?'reserveret':r.payoutId?'udbetalt':konto&&(r.settle==='konto')?'på kontoen':'til udbetaling'} · ${splitTxt(r)}</span></td><td class="n">${kr(r.total)}<br><span class="muted" style="font-size:12px">−${kr(isakOf(r))}</span></td><td class="n"><b>${kr(prodOf(r))}</b></td></tr>`}).join('')}</tbody></table>`:`<p class="empty">Intet salg endnu.</p>`}
   </section>
-  ${pays.length?`<section class="card stack"><h3>Udbetalinger</h3><div class="list">${pays.map(x=>`<div class="li"><span class="grow"><b>${kr(x.net)}</b><span class="muted">${dateTxt(x.createdAt)} · ${x.count} ${x.count===1?'salg':'salg'} · ${esc(x.bank||'')}</span></span><button class="btn small ghost" data-bilag="${esc(x.id)}">Afregning</button></div>`).join('')}</div></section>`:''}`;
+  ${pays.length?`<section class="card stack"><h3>Udbetalinger</h3><div class="list">${pays.map(x=>`<div class="li"><span class="grow"><b>${kr(x.net)}</b><span class="muted">${dateTxt(x.createdAt)} · ${x.count} salg · ${x.settle==='konto'?'kontoafregning':'direkte'} · ${esc(x.bank||'')}</span></span><button class="btn small ghost" data-bilag="${esc(x.id)}">Afregning</button></div>`).join('')}</div></section>`:''}`;
 }
 function vBilag(){
   const x=S.payouts.find(y=>y.id===S.sheet.id); if(!x) return '';
-  const rs=S.reservations.filter(r=>r.payoutId===x.id);
+  const rs=S.reservations.filter(r=>r.payoutId===x.id), konto=x.settle==='konto';
+  const pct=x.gross?Math.round(x.fee/x.gross*100):10;
   return `<div class="scrim" data-scrim><div class="sheet" role="dialog" aria-label="Afregning">
-    <div class="between"><span class="eb">Afregning · ${esc(x.ref||x.id)}</span><button class="close" data-x aria-label="Luk">×</button></div>
-    <h2>${esc(x.producerName)}</h2><span class="muted" style="font-size:14px">Udbetalt ${dateTxt(x.createdAt)} til ${esc(x.bank||'')}</span>
+    <div class="between"><span class="eb">${konto?'Kontoafregning':'Afregning'} · ${esc(x.ref||x.id)}</span><button class="close" data-x aria-label="Luk">×</button></div>
+    <h2>${esc(x.producerName)}</h2><span class="muted" style="font-size:14px">${konto?'Overført':'Udbetalt'} ${dateTxt(x.createdAt)} til ${esc(x.bank||'')}</span>
     <table class="ledger"><thead><tr><th>Vare</th><th class="n">Salg</th></tr></thead><tbody>${rs.map(r=>`<tr><td>${esc(r.qty)} × ${esc(r.productName)}<br><span class="muted" style="font-size:12px">${dateTxt(r.pickedAt)} · kode ${esc(r.code)}</span></td><td class="n">${kr(r.total)}</td></tr>`).join('')}</tbody></table>
-    <div class="stack" style="gap:6px"><div class="payline"><span>Salg i alt</span><b class="num">${kr(x.gross)}</b></div><div class="payline"><span>Isakram, 10 % provision</span><span class="num">−${kr(x.fee)}</span></div>
-    <div class="payline" style="border-top:1px solid var(--line);padding-top:8px;font-size:16px"><b>Udbetalt</b><b class="num">${kr(x.net)}</b></div></div>
-    <p class="muted" style="font-size:12.5px">Betalingsgebyrer betales af Isakram ud af provisionen. Moms på provisionen fremgår af Isakrams faktura. Afregningen kan bruges som bilag i jeres bogføring.</p>
+    <div class="stack" style="gap:6px"><div class="payline"><span>Salg i alt</span><b class="num">${kr(x.gross)}</b></div><div class="payline"><span>Isakrams andel, ${pct} %</span><span class="num">−${kr(x.fee)}</span></div>
+    <div class="payline" style="border-top:1px solid var(--line);padding-top:8px;font-size:16px"><b>${konto?'Overført':'Udbetalt'}</b><b class="num">${kr(x.net)}</b></div></div>
+    <p class="muted" style="font-size:12.5px">${konto?'Isakram har solgt varerne til kunderne og afregner jeres andel. Afregningen kan bruges som bilag i bogføringen. Spørg jeres revisor, hvordan den skal momsbehandles.':'Betalingsgebyrer betales af Isakram ud af provisionen. Moms på provisionen fremgår af Isakrams faktura. Afregningen kan bruges som bilag i jeres bogføring.'}</p>
   </div></div>`;
 }
 /* Isakram: fanen Økonomi */
@@ -677,28 +694,38 @@ function vEconomy(){
   const ext=S.reservations.filter(r=>r.producerId!==KITCHEN_ID);
   const by=st=>ext.filter(r=>payState(r)===st), sum=(a,f)=>r2(a.reduce((s,r)=>s+f(r),0));
   const held=by('authorized'), cap=by('captured'), rel=by('released');
-  const capT=sum(cap,r=>r.total), fee=sum(cap,r=>r.total*FEE), pfee=sum(cap.filter(r=>r.payMethod),payFeeOf);
+  const capD=cap.filter(r=>(r.settle||'direct')==='direct'), capK=cap.filter(r=>r.settle==='konto');
+  const capT=sum(cap,r=>r.total), isD=sum(capD,isakOf), isK=sum(capK,isakOf), toProd=sum(cap,prodOf), pfee=sum(cap.filter(r=>r.payMethod),payFeeOf);
   const kitchen=sum(S.reservations.filter(r=>r.producerId===KITCHEN_ID&&payState(r)==='captured'),r=>r.total);
+  const net=r2(isD+isK-pfee+kitchen);
   const prods=S.producers.filter(p=>p.status==='approved'&&p.id!==KITCHEN_ID).map(p=>({p,due:unpaid(p.id)})).filter(x=>x.due.length||!payoutOk(x.p));
+  const dueOf=k=>prods.filter(x=>payoutOk(x.p)).some(x=>x.due.some(r=>(r.settle||'direct')===k));
   const pays=[...S.payouts].sort((a,b)=>a.createdAt<b.createdAt?1:-1).slice(0,8);
-  const anyDue=prods.some(x=>x.due.length&&payoutOk(x.p));
+  const ex=100, exFee=r2(ex*PAYFEE.pct+PAYFEE.fixed);
+  const cmp=[['Producenten får',m=>kr(ex*(1-m.share))],['Isakram får',m=>kr(ex*m.share)],['Betalingsgebyr (eksempel)',m=>'−'+kr(exFee)],['Isakram netto',m=>`<b>${kr(r2(ex*m.share-exFee))}</b>`],['Udbetaling',m=>m.cadence],['Sælger til kunden',m=>m.seller],['Producentens konto',m=>m.account]];
   return `
-  <div class="stats"><div class="stat dark"><span>Isakram netto</span><b class="num">${krs(fee-pfee+kitchen)}</b></div><div class="stat"><span>Trukket</span><b class="num">${krs(capT)}</b></div><div class="stat"><span>Reserveret</span><b class="num">${krs(sum(held,r=>r.total))}</b></div></div>
+  <div class="stats"><div class="stat dark"><span>Isakram netto</span><b class="num">${krs(net)}</b></div><div class="stat"><span>Trukket</span><b class="num">${krs(capT)}</b></div><div class="stat"><span>Reserveret</span><b class="num">${krs(sum(held,r=>r.total))}</b></div></div>
   <section class="card stack" style="gap:8px"><h2>Pengestrømmen</h2>
     <div class="payline"><span>Kunderne har betalt (trukket ved afhentning)</span><b class="num">${kr(capT)}</b></div>
-    <div class="payline"><span>Til producenterne, 90 %</span><span class="num">${kr(r2(capT-fee))}</span></div>
-    <div class="payline"><span>Isakrams provision, 10 %</span><span class="num">${kr(fee)}</span></div>
+    <div class="payline"><span>Til producenterne</span><span class="num">${kr(toProd)}</span></div>
+    <div class="payline"><span>Isakram, direkte betaling (10 %)</span><span class="num">${kr(isD)}</span></div>
+    <div class="payline"><span>Isakram, kontoafregning (50 %)</span><span class="num">${kr(isK)}</span></div>
     <div class="payline"><span>Betalingsgebyrer <span class="muted">(eksempel: ${String(PAYFEE.pct*100).replace('.',',')} % + ${kr(PAYFEE.fixed)} pr. betaling)</span></span><span class="num">−${kr(pfee)}</span></div>
     <div class="payline"><span>Køkkenets eget salg</span><span class="num">${kr(kitchen)}</span></div>
-    <div class="payline" style="border-top:1px solid var(--line);padding-top:8px"><b>Isakram netto</b><b class="num">${kr(r2(fee-pfee+kitchen))}</b></div>
+    <div class="payline" style="border-top:1px solid var(--line);padding-top:8px"><b>Isakram netto</b><b class="num">${kr(net)}</b></div>
     <p class="muted" style="font-size:13px;margin:0">Reserveret, men ikke hentet: ${kr(sum(held,r=>r.total))} (${held.length}). Frigivet efter annullering eller udeblivelse: ${kr(sum(rel,r=>r.total))} (${rel.length}). Gebyrsatsen er et eksempel. Ret den til jeres aftale med betalingsudbyderen.</p>
   </section>
-  <section class="card stack"><div class="between"><h2>Til udbetaling</h2><span class="muted">${nextPayday()}</span></div>
-    ${prods.length?`<div class="list">${prods.map(({p,due})=>{const g=r2(due.reduce((s,r)=>s+r.total,0));return `<div class="li"><span class="grow"><b>${esc(p.name)}</b><span class="muted">${due.length?due.length+' salg · ':''}${payoutOk(p)?'Reg. '+esc(p.payout.reg)+' ••'+esc(p.payout.last4):'mangler betalingskonto'}</span></span>${due.length?`<span class="num" style="text-align:right;font-size:14px;white-space:nowrap"><b>${kr(r2(g*(1-FEE)))}</b><br><span class="muted">af ${kr(g)}</span></span>`:''}${payoutOk(p)?'':'<span class="tag wait">Venter</span>'}</div>`}).join('')}</div>`:`<p class="empty">Intet at udbetale lige nu.</p>`}
-    <button class="btn block" id="po-run" ${anyDue&&!S.busy?'':'disabled'}>Demo: kør fredagens udbetaling nu</button>
-    <p class="muted" style="font-size:12.5px;margin:0">I den rigtige app sker udbetalingen automatisk hos Stripe. Producenter uden betalingskonto får pengene, så snart kontoen er oprettet.</p>
+  <section class="card stack"><h2>Sammenlign modellerne</h2><span class="muted" style="font-size:13px">Eksempel på et salg til ${kr(ex)}</span>
+    <table class="ledger"><thead><tr><th></th>${Object.values(MODELS).map(m=>`<th class="n">${m.name}<br><span style="font-weight:400">${m.short}</span></th>`).join('')}</tr></thead><tbody>${cmp.map(([l,f])=>`<tr><td>${l}</td>${Object.values(MODELS).map(m=>`<td class="n" style="white-space:normal">${f(m)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+    <p class="muted" style="font-size:12.5px;margin:0">Moms afhænger af, om Isakram formidler (direkte betaling) eller sælger varen videre (kontoafregning). Tal med en revisor, før I vælger.</p>
   </section>
-  ${pays.length?`<section class="card stack"><h3>Seneste udbetalinger</h3><div class="list">${pays.map(x=>`<div class="li"><span class="grow"><b>${esc(x.producerName)}</b><span class="muted">${dateTxt(x.createdAt)} · ${x.count} salg</span></span><span class="num">${kr(x.net)}</span><button class="btn small ghost" data-bilag="${esc(x.id)}">Afregning</button></div>`).join('')}</div></section>`:''}`;
+  <section class="card stack"><h2>Til udbetaling</h2>
+    ${prods.length?`<div class="list">${prods.map(({p,due})=>{const g=sum(due,r=>r.total), n=sum(due,prodOf), m=modelOf(p);return `<div class="li"><span class="grow"><b>${esc(p.name)}</b><span class="muted">${m.name} ${m.short} · ${due.length?due.length+' salg · ':''}${payoutOk(p)?'Reg. '+esc(p.payout.reg)+' ••'+esc(p.payout.last4):'mangler konto'}</span></span>${due.length?`<span class="num" style="text-align:right;font-size:14px;white-space:nowrap"><b>${kr(n)}</b><br><span class="muted">af ${kr(g)}</span></span>`:''}${payoutOk(p)?'':'<span class="tag wait">Venter</span>'}</div>`}).join('')}</div>`:`<p class="empty">Intet at udbetale lige nu.</p>`}
+    <button class="btn block" data-porun="direct" ${dueOf('direct')&&!S.busy?'':'disabled'}>Demo: kør fredagens udbetaling</button>
+    <button class="btn ghost block" data-porun="konto" ${dueOf('konto')&&!S.busy?'':'disabled'}>Demo: kør månedens kontoafregning</button>
+    <p class="muted" style="font-size:12.5px;margin:0">Direkte betaling udbetales automatisk hos Stripe hver fredag. Kontoafregning overføres af Isakram den 1. i måneden. Producenter uden konto får pengene, så snart kontoen er tilføjet.</p>
+  </section>
+  ${pays.length?`<section class="card stack"><h3>Seneste udbetalinger</h3><div class="list">${pays.map(x=>`<div class="li"><span class="grow"><b>${esc(x.producerName)}</b><span class="muted">${dateTxt(x.createdAt)} · ${x.count} salg · ${x.settle==='konto'?'kontoafregning':'direkte'}</span></span><span class="num">${kr(x.net)}</span><button class="btn small ghost" data-bilag="${esc(x.id)}">Afregning</button></div>`).join('')}</div></section>`:''}`;
 }
 function statusTag(x){
   if(x.status==='pending') return '<span class="tag wait">Venter</span>';
@@ -721,7 +748,7 @@ function vProducts(p){
       <label class="f">Navn<input class="inp" id="p-name" placeholder="Fx Gule løg"></label>
       <div class="stack" style="gap:6px"><span class="lbl">Hylde</span><div class="chips">${SHELVES.map(s=>`<button class="chip" data-shelf="${esc(s)}" aria-pressed="${S.shelf===s}">${esc(s)}</button>`).join('')}</div></div>
       <div class="grid3"><label class="f">Pris (kr.)<input class="inp num" id="p-price" inputmode="decimal" placeholder="25"></label><label class="f">Enhed<input class="inp" id="p-unit" placeholder="1 kg"></label><label class="f">På lager<input class="inp num" id="p-stock" inputmode="numeric" placeholder="20"></label></div>
-      <p class="banner between" id="p-net-row"><span>I får pr. salg, efter 10 %</span><b class="num" id="p-net">–</b></p>
+      <p class="banner between" id="p-net-row"><span>I får pr. salg, efter ${Math.round(modelOf(myProducer()).share*100)} %</span><b class="num" id="p-net">–</b></p>
       <label class="f">Beskrivelse<textarea class="inp" id="p-desc" placeholder="Hvordan er den dyrket eller lavet?"></textarea></label>
       <label class="row" style="font-size:14px;font-weight:600"><input type="checkbox" id="p-box" ${S.inBox?'checked':''} style="width:22px;height:22px;accent-color:var(--ink)"> Tilbyd også i Isakram-kassen</label>
       <p id="p-err" class="banner" hidden></p>
@@ -783,7 +810,7 @@ function vAdminOverblik(){
   const open = S.reservations.filter(r=>r.status==='reserved');
   const gmv = picked.filter(r=>r.producerId!==KITCHEN_ID).reduce((s,r)=>s+r.total,0);
   return `
-  <div class="stats"><div class="stat dark"><span>Isakram, 10 %</span><b class="num">${kr(gmv*FEE)}</b></div><div class="stat"><span>Solgt i alt</span><b class="num">${kr(gmv)}</b></div><div class="stat"><span>Åbne</span><b class="num">${open.length}</b></div></div>
+  <div class="stats"><div class="stat dark"><span>Isakrams andel</span><b class="num">${krs(picked.filter(r=>r.producerId!==KITCHEN_ID).reduce((s,r)=>s+isakOf(r),0))}</b></div><div class="stat"><span>Solgt i alt</span><b class="num">${kr(gmv)}</b></div><div class="stat"><span>Åbne</span><b class="num">${open.length}</b></div></div>
   <section class="card stack"><div class="between"><h2>Nye producenter</h2><span class="muted num">${pend.length}</span></div>
     ${pend.length?`<div class="list">${pend.map(p=>`<div class="li" style="flex-wrap:wrap"><span class="grow"><b>${esc(p.name)}</b><span class="muted">${esc(catsTxt(p))} · ${esc(p.town||'Ukendt by')} · CVR ${esc(p.cvr||'–')}</span><span class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">${p.cvrFound?'<span class="tag ok">Fundet i CVR</span>':(p.cvr?'<span class="tag wait">CVR ikke tjekket</span>':'<span class="tag wait">Uden CVR</span>')}${p.phoneVerified?`<span class="tag ok">Telefon bekræftet${p.phoneMatchesCvr?' · matcher CVR':''}</span>`:''}${p.branche?`<span class="tag three">Branche ${esc(p.branche)}</span>`:''}</span>${p.story?`<span style="font-size:14px">${esc(p.story)}</span>`:''}</span><span class="row"><button class="btn small ghost" data-rej="${esc(p.id)}">Afvis</button><button class="btn small" data-ok="${esc(p.id)}">Godkend</button></span></div>`).join('')}</div>`:`<p class="empty">Ingen ansøgninger lige nu. Prøv at søge under fanen Producent.</p>`}
   </section>
@@ -791,7 +818,7 @@ function vAdminOverblik(){
     ${pprods.length?`<div class="list">${pprods.map(x=>`<div class="li" style="flex-wrap:wrap;align-items:flex-start">${thumb(x)}<span class="grow"><b>${esc(x.name)}${x.unit?', '+esc(x.unit):''}</b><span class="muted num">${esc(x.producerName)} · ${kr(x.price)} · ${esc(x.shelf||'')} · ${x.stock} på lager</span>${x.description?`<span style="font-size:14px">${esc(x.description)}</span>`:''}</span><span class="row" style="margin-left:auto"><button class="btn small ghost" data-prej="${esc(x.id)}">Afvis</button><button class="btn small" data-pok="${esc(x.id)}">Godkend</button></span></div>`).join('')}</div>`:`<p class="empty">Ingen produkter venter. Producenter sender nye varer herind fra fanen Produkter.</p>`}
   </section>
   <section class="card stack"><h2>Producenter</h2>
-    ${appr.length?`<div class="list">${appr.map(p=>{const s=S.reservations.filter(r=>r.producerId===p.id&&r.status==='picked').reduce((a,r)=>a+r.total,0);const n=S.products.filter(x=>x.producerId===p.id&&x.status==='approved').length;return `<div class="li"><span class="grow"><b>${esc(p.name)}</b><span class="muted">${esc(p.category)} · ${n} ${n===1?'produkt':'produkter'}</span></span><span class="num" style="text-align:right;font-size:14px">${kr(s)}<br><span class="muted">gebyr ${kr(s*FEE)}</span></span></div>`}).join('')}</div>`:`<p class="empty">Ingen godkendte producenter endnu.</p>`}
+    ${appr.length?`<div class="list">${appr.map(p=>{const s=S.reservations.filter(r=>r.producerId===p.id&&r.status==='picked').reduce((a,r)=>a+r.total,0);const n=S.products.filter(x=>x.producerId===p.id&&x.status==='approved').length;return `<div class="li"><span class="grow"><b>${esc(p.name)}</b><span class="muted">${esc(p.category)} · ${n} ${n===1?'produkt':'produkter'} · ${modelOf(p).name} ${modelOf(p).short}</span></span><span class="num" style="text-align:right;font-size:14px">${kr(s)}<br><span class="muted">Isakram ${kr(S.reservations.filter(r=>r.producerId===p.id&&r.status==='picked').reduce((a,r)=>a+isakOf(r),0))}</span></span></div>`}).join('')}</div>`:`<p class="empty">Ingen godkendte producenter endnu.</p>`}
   </section>
   <section class="card stack"><h3>Demo</h3><p class="muted" style="font-size:14px">Rykker datoerne på demovarer frem, så de igen ligger i dag, i morgen og om 2 dage.</p><button class="btn ghost block" id="d-refresh">Forny demo-datoer</button></section>`;
 }
@@ -1131,7 +1158,7 @@ function vPay(){
   let body='';
   if(ps.step==='approve') body=`<div class="mpbox" role="group" aria-label="MobilePay, simuleret">
       <span style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5A78FF">MobilePay · simuleret</span>
-      <span style="font-size:15px">Godkend betaling til<br><b>${esc(p.name)} via Isakram</b></span>
+      <span style="font-size:15px">Godkend betaling til<br><b>${modelOf(p).key==='konto'?`Isakram</b><br>for varer fra ${esc(p.name)}`:`${esc(p.name)} via Isakram</b>`}</span>
       <span class="amt num">${kr(t)}</span>
       <span style="font-size:13px;color:#555">Beløbet reserveres nu og trækkes ved afhentning.</span>
       <button class="mpbtn" style="background:#5A78FF;color:#fff" data-payok>Godkend</button>
@@ -1199,7 +1226,7 @@ function render(){
   if(sk && sk===S._sk){ const sh=$('#sheet-root .sheet'); if(sh) sh.style.animation='none'; }
   S._sk=sk;
 }
-function updateNet(){ const o=$('#p-net'); if(!o) return; const v=num('p-price'); o.textContent = v>0 ? kr(v*(1-FEE)) : '–'; }
+function updateNet(){ const o=$('#p-net'); if(!o) return; const v=num('p-price'); o.textContent = v>0 ? kr(v*(1-modelOf(myProducer()).share)) : '–'; }
 
 /* ---------- actions ---------- */
 async function reserve(method){
@@ -1216,14 +1243,14 @@ async function reserve(method){
       const cur=(await db.doc('listings/'+l.id).get()).data(); const q=Math.min(S.qty['l:'+l.id], cur?.qty||0); if(q<=0) continue;
       await db.doc('listings/'+l.id).update({qty:cur.qty-q});
       const price=unitPrice(cur), total=r2(q*price);
-      const r={kind:'kortdato',listingId:l.id,producerId:p.id,producerName:p.name,productName:l.name+(l.unit?', '+l.unit:''),qty:q,unitPrice:price,total,fee:r2(total*FEE),code:c,userId:S.me,status:'reserved',createdAt:new Date().toISOString(),...pay()};
+      const r={kind:'kortdato',listingId:l.id,producerId:p.id,producerName:p.name,productName:l.name+(l.unit?', '+l.unit:''),qty:q,unitPrice:price,total,fee:r2(total*modelOf(p).share),settle:modelOf(p).key,share:modelOf(p).share,code:c,userId:S.me,status:'reserved',createdAt:new Date().toISOString(),...pay()};
       await db.collection('reservations').add(r); made.push(r);
     }
     for(const x of wantP){
       const cur=(await db.doc('products/'+x.id).get()).data(); const q=Math.min(S.qty['p:'+x.id], cur?.stock||0); if(q<=0) continue;
       await db.doc('products/'+x.id).update({stock:cur.stock-q});
       const total=r2(q*cur.price);
-      const r={kind:'fast',productId:x.id,producerId:p.id,producerName:p.name,productName:x.name+(x.unit?', '+x.unit:''),qty:q,unitPrice:cur.price,total,fee:r2(total*FEE),code:c,userId:S.me,status:'reserved',createdAt:new Date().toISOString(),...pay()};
+      const r={kind:'fast',productId:x.id,producerId:p.id,producerName:p.name,productName:x.name+(x.unit?', '+x.unit:''),qty:q,unitPrice:cur.price,total,fee:r2(total*modelOf(p).share),settle:modelOf(p).key,share:modelOf(p).share,code:c,userId:S.me,status:'reserved',createdAt:new Date().toISOString(),...pay()};
       await db.collection('reservations').add(r); made.push(r);
     }
     S.qty={}; S.busy=false;
@@ -1251,17 +1278,17 @@ async function savePayout(){
   await db.doc('producers/'+p.id).update({payout:{status:'active', provider:'Stripe (demo)', holder, reg, last4:acct.slice(-4), createdAt:new Date().toISOString()}});
   toast('Betalingskontoen er oprettet');
 }
-async function runPayouts(){
+async function runPayouts(model){
   S.busy=true; render(); let n=0;
   try{
     for(const p of S.producers.filter(payoutOk)){
-      const due=unpaid(p.id); if(!due.length) continue;
-      const gross=r2(due.reduce((s,r)=>s+r.total,0)), fee=r2(gross*FEE);
-      const ref=await db.collection('payouts').add({producerId:p.id, producerName:p.name, gross, fee, net:r2(gross-fee), count:due.length, bank:'Reg. '+p.payout.reg+' ••'+p.payout.last4, ref:'po_demo_'+Math.random().toString(36).slice(2,8), createdAt:new Date().toISOString()});
+      const due=unpaid(p.id).filter(r=>(r.settle||'direct')===model); if(!due.length) continue;
+      const gross=r2(due.reduce((s,r)=>s+r.total,0)), fee=r2(due.reduce((s,r)=>s+isakOf(r),0));
+      const ref=await db.collection('payouts').add({producerId:p.id, producerName:p.name, settle:model, gross, fee, net:r2(gross-fee), count:due.length, bank:'Reg. '+p.payout.reg+' ••'+p.payout.last4, ref:(model==='konto'?'ka_demo_':'po_demo_')+Math.random().toString(36).slice(2,8), createdAt:new Date().toISOString()});
       for(const r of due) await db.doc('reservations/'+r.id).update({payoutId:ref.id});
       n++;
     }
-    toast(n?`Udbetalt til ${n} ${n===1?'producent':'producenter'}`:'Intet at udbetale');
+    toast(n?`${model==='konto'?'Kontoafregning':'Udbetaling'} til ${n} ${n===1?'producent':'producenter'}`:'Intet at udbetale');
   }catch(e){ toast('Udbetalingen gik ikke igennem.'); }
   S.busy=false; render();
 }
@@ -1402,6 +1429,8 @@ document.addEventListener('click', async e=>{
   if(d.paygo!==undefined){ S.sheet.step = (S.sheet.method||'mobilepay')==='card' ? 'card' : 'approve'; render(); return; }
   if(d.paycancel!==undefined){ S.sheet.step='choose'; toast('Betalingen blev afvist. Intet er trukket.'); render(); return; }
   if(d.payok!==undefined){ const m=S.sheet.method||'mobilepay'; S.sheet.step='busy'; render(); setTimeout(()=>reserve(m),700); return; }
+  if(d.settle){ const p=myProducer(); if(p&&modelOf(p).key!==d.settle){ db.doc('producers/'+p.id).update({settle:d.settle}).then(()=>toast(`${MODELS[d.settle].name} gælder nu for nye salg`)); } return; }
+  if(d.porun){ runPayouts(d.porun); return; }
   if(d.bilag){ S.sheet={type:'bilag',id:d.bilag}; render(); return; }
   if(d.shelf){ S.shelf=d.shelf; render(); return; }
   if(d.cat){ S.cat=d.cat; render(); return; }
@@ -1426,6 +1455,7 @@ document.addEventListener('click', async e=>{
   if(d.susend!==undefined){ suSend(); return; }
   if(d.suverify!==undefined){ suVerify(); return; }
   if(d.sucat){ suCollect(); const su=S.su, c=d.sucat; su.cats=su.cats.includes(c)?su.cats.filter(x=>x!==c):[...su.cats,c]; if(!su.cats.includes(su.cat)) su.cat=su.cats[0]||null; su.err=null; render(); return; }
+  if(d.sumodel){ suCollect(); S.su.settle=d.sumodel; render(); return; }
   if(d.suprim){ suCollect(); S.su.cat=d.suprim; render(); return; }
   if(d.fcat!==undefined){ S.fcat=d.fcat; render(); return; }
   if(d.atab){ S.atab=d.atab; render(); return; }
@@ -1439,7 +1469,6 @@ document.addEventListener('click', async e=>{
     case 'reserve': reserve(); return;
     case 'topay': if(S.sheet&&S.sheet.pid) S.sheet={type:'pay',pid:S.sheet.pid,method:'mobilepay',step:'choose'}; render(); return;
     case 'po-save': savePayout(); return;
-    case 'po-run': runPayouts(); return;
     case 'f-last': S.onlyLast=!S.onlyLast; render(); return;
     case 's-send': signup(); return;
     case 'l-add': addListing(); return;
