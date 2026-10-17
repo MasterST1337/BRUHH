@@ -4,7 +4,7 @@
    <script src="fodevarecentralen-sektion.js"></script>
    Kræver at fodevarecentralen.html ligger i samme mappe som index.html. */
 (function(){
-  var APP_URL = 'fodevarecentralen.html?v=9';  // hæv tallet, når appen opdateres, så browsere henter den nye version
+  var APP_URL = 'fodevarecentralen.html?v=10';  // hæv tallet, når appen opdateres, så browsere henter den nye version
 
   var css = '' +
   '#page-app{max-width:1100px}' +
@@ -54,6 +54,9 @@
   function install(){
     var menu = document.getElementById('navMenu');
     if(!menu || document.getElementById('page-app')) return;
+    // Sproget fra sprogvalget (sprog.js) sendes med til appen
+    var lang = 'da'; try { if (window.I18N) lang = I18N.initial(); } catch(e){}
+    html = html.split(APP_URL).join(APP_URL + '&lang=' + lang);
     var art = document.createElement('article');
     art.id = 'page-app'; art.className = 'page-content wide'; art.hidden = true; art.innerHTML = html;
     var last = document.getElementById('page-suppliers') || document.getElementById('page-shop');

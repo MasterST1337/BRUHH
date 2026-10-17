@@ -33,6 +33,7 @@ Isakram tager 10 % af salgsprisen. Producenten får 90 %, og der er intet oprett
 | `web/` | Versionen til hjemmesiden. Kører uden login, og intet gemmes. |
 | `web/fodevarecentralen.html` | Selve appen. Én selvstændig fil. |
 | `web/fodevarecentralen-sektion.js` | Tilføjer "Fødevarecentralen" som en side i menuen på hjemmesiden, med appen vist i en telefonramme. |
+| `web/sprog.js` | Sprogvalg (DA · EN · DE) i topbaren. Oversætter hjemmesiden og sender sproget videre til appen. |
 | `web/genkend.php` | Billedgenkendelse. Sender billedet til Claude med en API-nøgle, der aldrig når browseren. |
 | `web/genkend-config.example.php` | Skabelon til indstillinger og API-nøgle. |
 | `claude/fodevarecentralen-claude.html` | Versionen, der kører som artefakt i Claude, med fælles database og Claude-funktioner. |
@@ -43,7 +44,8 @@ Isakram tager 10 % af salgsprisen. Producenten får 90 %, og der er intet oprett
 1. Læg filerne fra `web/` i samme mappe som hjemmesidens `index.html`.
 2. Tilføj denne linje i `index.html` lige før `</body>`:
    ```html
-   <script src="fodevarecentralen-sektion.js?v=9"></script>
+   <script src="fodevarecentralen-sektion.js?v=10"></script>
+   <script src="sprog.js?v=1"></script>
    ```
    Hæv tallet, hver gang appen opdateres, så browsere henter den nye version. Tallet i `APP_URL` øverst i `fodevarecentralen-sektion.js` skal også hæves.
 3. Billedgenkendelse (valgfri, kræver PHP med curl):
@@ -51,6 +53,10 @@ Isakram tager 10 % af salgsprisen. Producenten får 90 %, og der er intet oprett
    - Indsæt en API-nøgle fra [Claude-konsollen](https://platform.claude.com/settings/keys). Lav den til ét workspace og med udløb "Never".
    - Ret `GENKEND_DOMAENER` til jeres domæne.
    - Uden config-filen virker appen stadig. Producenten udfylder så felterne selv.
+
+## Sprog
+
+Hjemmesiden og appen findes på dansk, engelsk og tysk. Dansk er standard. Valget huskes i browseren, og `?lang=en` eller `?lang=de` i adressen vælger sproget direkte. Oversættelserne ligger som ordbøger i `sprog.js` (hjemmesiden) og øverst i appen. Producenternes egne tekster og opskrifterne fra Madam Mangors kogebog vises på dansk.
 
 ## Kort
 
